@@ -343,11 +343,26 @@ function calculateDPS(totalStats) {
     // 1. Multiplicador de Dano (Armadura)
     const damageMultiplier = 100 / (100 + targetArmor);
 
-    // 2. Cálculo de DPS (sem crítico por enquanto)
-    // DPS = (Dano por Ataque) * (Ataques por Segundo) * (Multiplicador de Armadura)
-    // TODO: Adicionar o cálculo de crítico
+    // 2. Cálculo de DPS com Crítico (MISSÃO 6 - EXECUTADA)
     
-    const dps = (totalStats.ad * totalStats.attackspeed) * damageMultiplier;
+    // Chance de crítico (0.0 a 1.0)
+    const critChance = totalStats.crit / 100;
+    
+    // Dano de crítico (Bônus de 100% = 1.0)
+    let critDamageBonus = 1.0; 
+    
+    // Checa se o Gume do Infinito (ID 3031) está nos itens
+    // Gume (14.13+) dá 50% de Dano Crítico (Bônus de 0.5)
+    // Nosso bônus total se torna 1.5 (150%)
+    const hasInfinityEdge = currentState.itemIds.includes('3031');
+    if (hasInfinityEdge) {
+        critDamageBonus = 1.5;
+    }
+    
+    // DPS Médio de Ataque Básico:
+    // DPS_Médio = DPS_Base * ( 1 + (ChanceDeCritico * BonusDeDanoCritico) )
+    const baseDPS = (totalStats.ad * totalStats.attackspeed) * damageMultiplier;
+    const dps = baseDPS * (1 + (critChance * critDamageBonus));
 
     renderDPS(dps);
 }
