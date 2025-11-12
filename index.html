@@ -3,83 +3,83 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Calculadora DPS LoL - MVP</title>
+    <title>Calculadora DPS LoL - dragonanalitica</title>
+    
     <!-- 1. Tailwind CSS via CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
+    
     <!-- 2. Sortable.js (para Drag-and-Drop) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
     
-    <!-- **** COMANDO 4: MONETIZAÇÃO (SOBREVIVÊNCIA) **** -->
-    <!-- Script do Google AdSense - Substitua 'YOUR_CLIENT_ID' pelo seu ID real -->
-    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-YOUR_CLIENT_ID"
-         crossorigin="anonymous"></script>
-    <!-- *********************************************** -->
-
     <!-- 3. Configuração do Tailwind e Fontes -->
     <script>
         tailwind.config = {
             theme: {
                 extend: {
                     fontFamily: {
-                        'inter': ['Inter', 'sans-serif'],
+                        sans: ['Inter', 'sans-serif'],
                     },
                     colors: {
+                        'gray-darkest': '#1a1a1a',
+                        'gray-dark': '#2c2c2c',
+                        'gray-light': '#404040',
                         'neon-green': '#39FF14',
-                        'gray-dark': '#1a1a1a',
-                        'gray-medium': '#2a2a2a',
-                        'gray-light': '#3a3a3a',
+                    },
+                    boxShadow: {
+                        'neon': '0 0 10px #39FF14, 0 0 20px #39FF14',
                     }
                 }
             }
         }
     </script>
-    <!-- 4. Estilos Customizados (Tema Streaming/Neon) -->
+    
+    <!-- 4. Estilos Globais (Layout 'Streaming') -->
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&display=swap');
-        
         body {
+            background-color: #1a1a1a; /* gray-darkest */
+            color: #e0e0e0;
             font-family: 'Inter', sans-serif;
+            overflow: hidden; /* Previne scroll da página inteira */
         }
-
-        /* Efeito Neon */
-        .neon-text {
-            text-shadow: 0 0 4px rgba(57, 255, 20, 0.7),
-                         0 0 8px rgba(57, 255, 20, 0.5);
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
         }
-
-        /* Altura mínima para zonas de Drop (D&D) */
-        .drag-list-min-height {
-            min-height: 120px;
+        ::-webkit-scrollbar-track {
+            background: #2c2c2c; /* gray-dark */
+            border-radius: 10px;
         }
-
-        /* Placeholder para itens arrastáveis */
-        .item-placeholder {
-            width: 64px;
-            height: 64px;
-            background-color: rgba(57, 255, 20, 0.1);
-            border: 2px dashed #39FF14;
-            border-radius: 0.5rem;
-            margin: 4px;
+        ::-webkit-scrollbar-thumb {
+            background: #404040; /* gray-light */
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #505050;
+        }
+        /* Efeito de hover no card */
+        .card-item:hover {
+            border-color: #39FF14; /* neon-green */
+            box-shadow: 0 0 8px #39FF14;
+        }
+        /* Placeholder do Sortable.js */
+        .sortable-ghost {
+            opacity: 0.4;
+            background-color: #39FF14 !important;
+        }
+        .sortable-drag {
+            opacity: 1 !important;
         }
     </style>
 </head>
-<body class="bg-gray-dark text-gray-300 font-inter flex flex-col h-screen">
+<body class="p-4 md:p-8">
 
-    <!-- HEADER: Título com efeito Neon -->
-    <header class="bg-gray-medium p-4 shadow-lg z-10">
-        <h1 class="text-2xl font-black text-center text-neon-green neon-text uppercase tracking-widest">
-            Calculadora de DPS - League of Legends
-        </h1>
-    </header>
+    <main class="grid grid-cols-1 lg:grid-cols-4 gap-6 h-[calc(100vh-4rem)]">
 
-    <!-- MAIN: Layout principal de 3 colunas -->
-    <main class="flex-grow grid grid-cols-1 lg:grid-cols-4 gap-4 p-4 overflow-auto">
-
-        <!-- COLUNA 1: Biblioteca (Campeões e Itens para D&D) -->
-        <aside class="bg-gray-medium rounded-lg shadow-inner p-4 flex flex-col overflow-y-auto">
-            <h2 class="text-lg font-bold text-neon-green mb-4">Biblioteca</h2>
+        <!-- COLUNA 1: Biblioteca (Campeões e Itens) -->
+        <div class="lg:col-span-1 bg-gray-darkest p-4 rounded-lg shadow-lg flex flex-col h-full">
+            <h2 class="text-2xl font-bold text-neon-green mb-4">Biblioteca</h2>
             
-            <!-- Abas (futuro) -->
+            <!-- Abas -->
             <div class="mb-4">
                 <button class="bg-gray-light text-neon-green px-4 py-2 rounded-t-lg">Campeões</button>
                 <button class="bg-gray-dark text-gray-500 px-4 py-2 rounded-t-lg opacity-50">Itens</button>
@@ -92,98 +92,85 @@
             </div>
             
             <!-- Área de Itens/Campeões (para popular com JS) -->
-            <!-- Esta lista será usada pelo Sortable.js (grupo 'biblioteca') -->
-            <div id="biblioteca-lista" class="flex flex-wrap gap-2 p-2 bg-gray-dark rounded-lg overflow-y-auto drag-list-min-height">
-                <!-- Itens serão populados pelo app.js -->
-                <div class="w-16 h-16 bg-gray-light rounded-lg flex items-center justify-center text-xs text-center p-1" data-id="temp-aatrox">Aatrox (placeholder)</div>
-                <div class="w-16 h-16 bg-gray-light rounded-lg flex items-center justify-center text-xs text-center p-1" data-id="temp-ahri">Ahri (placeholder)</div>
-                <div class="w-16 h-16 bg-gray-light rounded-lg flex items-center justify-center text-xs text-center p-1" data-id="temp-doran">Doran (placeholder)</div>
+            <!-- Altura ajustada para compensar o filtro -->
+            <div id="biblioteca-lista" class="flex flex-wrap gap-2 overflow-y-auto h-[calc(70vh_-_68px)] p-2 bg-gray-dark rounded-b-lg rounded-tr-lg justify-start content-start">
+                <!-- Placeholders (serão substituídos via JS) -->
+                <div class="w-16 h-16 bg-gray-light rounded-lg animate-pulse"></div>
+                <div class="w-16 h-16 bg-gray-light rounded-lg animate-pulse"></div>
+                <div class="w-16 h-16 bg-gray-light rounded-lg animate-pulse"></div>
             </div>
-        </aside>
+        </div>
 
-        <!-- COLUNA 2: Card Ativo (RPG Card - Drop Zone) -->
-        <section class="bg-gray-medium rounded-lg shadow-inner p-4 lg:col-span-2 flex flex-col overflow-y-auto">
-            <h2 class="text-lg font-bold text-neon-green mb-4">Card de Status (Ativo)</h2>
-            
-            <!-- Zona de Drop do Campeão -->
-            <div class="mb-4">
-                <label class="block text-sm font-medium mb-2">Campeão (Arraste aqui)</label>
-                <!-- Zona de drop para o Campeão (grupo 'campeoes') -->
-                <div id="campeao-selecionado-dropzone" class="bg-gray-dark rounded-lg p-4 flex justify-center items-center drag-list-min-height border-2 border-dashed border-gray-light">
+        <!-- COLUNA 2: Card Ativo (Cálculos) -->
+        <div class="lg:col-span-2 bg-gray-darkest p-4 rounded-lg shadow-lg flex flex-col h-full overflow-y-auto">
+            <h2 class="text-2xl font-bold text-neon-green mb-4">Card Ativo</h2>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                
+                <!-- Dropzone do Campeão -->
+                <div id="campeao-selecionado-dropzone" class="md:col-span-1 bg-gray-dark rounded-lg p-4 h-40 flex items-center justify-center border-2 border-dashed border-gray-light text-gray-500 relative">
+                    <span class="text-center">Solte o Campeão Aqui</span>
                     <!-- O campeão arrastado aparecerá aqui -->
-                    <span class="text-gray-500">Solte o Campeão</span>
+                </div>
+
+                <!-- Inputs de Nível e Alvo -->
+                <div class="md:col-span-2 bg-gray-dark rounded-lg p-4 grid grid-cols-2 gap-4 h-40">
+                    <div>
+                        <label for="level" class="block text-sm font-medium text-neon-green">Nível do Campeão</label>
+                        <input type="number" id="level" name="level" value="1" min="1" max="18"
+                               class="mt-1 block w-full bg-gray-light border-gray-light rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-neon-green">
+                    </div>
+                    <div>
+                        <label for="target-armor" class="block text-sm font-medium text-gray-400">Armadura do Alvo</label>
+                        <input type="number" id="target-armor" name="target-armor" value="100" min="0"
+                               class="mt-1 block w-full bg-gray-light border-gray-light rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-neon-green">
+                    </div>
+                    <div>
+                        <label for="target-mr" class="block text-sm font-medium text-gray-400">Res. Mágica do Alvo</label>
+                        <input type="number" id="target-mr" name="target-mr" value="100" min="0"
+                               class="mt-1 block w-full bg-gray-light border-gray-light rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-neon-green">
+                    </div>
                 </div>
             </div>
 
-            <!-- Nível -->
-            <div class="mb-4">
-                <label for="level" class="block text-sm font-medium mb-2">Nível do Campeão</label>
-                <input type="number" id="level" name="level" value="1" min="1" max="18" 
-                       class="w-24 bg-gray-light border border-gray-light text-gray-200 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-neon-green focus:border-transparent">
-            </div>
-
-            <!-- Zona de Drop dos Itens -->
-            <div>
-                <label class="block text-sm font-medium mb-2">Itens (Arraste aqui)</label>
-                <!-- Zona de drop para Itens (grupo 'itens') -->
-                <div id="itens-selecionados-dropzone" class="bg-gray-dark rounded-lg p-4 grid grid-cols-6 gap-2 drag-list-min-height border-2 border-dashed border-gray-light">
-                    <!-- Placeholders de Slot de Item -->
-                    <div class="item-placeholder"></div>
-                    <div class="item-placeholder"></div>
-                    <div class="item-placeholder"></div>
-                    <div class="item-placeholder"></div>
-                    <div class="item-placeholder"></div>
-                    <div class="item-placeholder"></div>
+            <!-- Dropzone dos Itens -->
+            <div class="mt-4">
+                <h3 class="text-lg font-semibold text-gray-300 mb-2">Itens</h3>
+                <div id="itens-selecionados-dropzone" class="bg-gray-dark rounded-lg p-4 min-h-[100px] flex flex-wrap gap-2 border-2 border-dashed border-gray-light">
+                    <!-- Itens arrastados aparecerão aqui -->
                 </div>
             </div>
 
-            <!-- Área de Status (Será o Card RPG) -->
-            <div id="card-rpg-stats" class="mt-4 p-4 bg-gray-dark rounded-lg">
-                <h3 class="text-md font-semibold text-neon-green mb-2">Status Calculados</h3>
-                <pre class="text-sm text-gray-300"><!-- Status (AD, AS, HP, etc) serão exibidos aqui --></pre>
+            <!-- Card RPG de Status -->
+            <div id="card-rpg" class="mt-4">
+                <h3 class="text-lg font-semibold text-gray-300 mb-2">Status Totais (Card RPG)</h3>
+                <div id="card-rpg-stats" class="bg-gray-dark rounded-lg p-4">
+                    <pre class="text-sm text-gray-200 whitespace-pre-wrap font-mono"><!-- Selecione um Campeão --></pre>
+                </div>
             </div>
-        </section>
+        </div>
 
-        <!-- COLUNA 3: Simulação e Resultados -->
-        <aside class="bg-gray-medium rounded-lg shadow-inner p-4 flex flex-col overflow-y-auto">
-            <h2 class="text-lg font-bold text-neon-green mb-4">Simulação (Alvo)</h2>
+        <!-- COLUNA 3: Resultado (DPS) -->
+        <div class="lg:col-span-1 bg-gray-darkest p-4 rounded-lg shadow-lg flex flex-col h-full items-center justify-center text-center">
+            <h2 class="text-2xl font-bold text-neon-green mb-4">DPS (Ataque Básico)</h2>
+            <div class="bg-gray-dark rounded-full w-48 h-48 flex items-center justify-center border-4 border-neon-green shadow-neon">
+                <span id="resultado-dps" class="text-6xl font-bold text-white">0</span>
+            </div>
+            <p class="mt-4 text-gray-400">vs. alvo com <span id="display-armor">100</span> Armadura</p>
             
-            <!-- Inputs do Alvo -->
-            <div class="space-y-4 mb-6">
-                <div>
-                    <label for="target-armor" class="block text-sm font-medium mb-1">Armadura do Alvo</label>
-                    <input type="number" id="target-armor" name="target-armor" value="100" min="0" 
-                           class="w-full bg-gray-light border border-gray-light text-gray-200 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-neon-green focus:border-transparent">
-                </div>
-                <div>
-                    <label for="target-mr" class="block text-sm font-medium mb-1">Res. Mágica do Alvo</labe>
-                    <input type="number" id="target-mr" name="target-mr" value="100" min="0" 
-                           class="w-full bg-gray-light border border-gray-light text-gray-200 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-neon-green focus:border-transparent">
-                </div>
+            <!-- Espaço para Monetização (Comando 4) -->
+            <div id="adsense-block-vertical" class="mt-6 w-full h-48 bg-gray-dark border border-gray-light flex items-center justify-center text-gray-500 rounded-lg">
+                Espaço para Anúncio
             </div>
-
-            <!-- Área de Resultado (DPS) -->
-            <div class="flex-grow flex flex-col items-center justify-center bg-gray-dark rounded-lg p-4">
-                <h3 class_ ="text-sm font-medium text-gray-400 uppercase tracking-wider mb-2">DPS (Ataque Básico)</h3>
-                <div id="area-resultado" class="text-center">
-                    <span id="resultado-dps" class_ ="font-black text-6xl text-neon-green neon-text">
-                        0
-                    </span>
-                </div>
-                <p class="text-xs text-gray-500 mt-2">(Cálculo de habilidades em breve)</p>
-            </div>
-        </aside>
+        </div>
 
     </main>
 
-    <!-- FOOTER: (Espaço para Monetização) -->
-    <footer class="bg-gray-medium p-2 text-center text-xs text-gray-600">
-        <div id="ads-placeholder" class="h-10 flex items-center justify-center">
-            (Espaço para Anúncio - Monetização Fase 4)
-        </div>
-    </footer>
+    <!-- Script de Monetização (Comando 4) -->
+    <!-- Substituir por seu script real do AdSense -->
+    <!-- <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=YOUR_CLIENT_ID" crossorigin="anonymous"></script> -->
 
-    <!-- 5. Nosso Cérebro (app.js) -->
+    <!-- Cérebro da Aplicação -->
     <script src="app.js"></script>
 </body>
 </html>
