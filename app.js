@@ -1,5 +1,5 @@
 /**
- * app.js v5.0.1 (Atualização de Protocolo)
+ * app.js v5.0.3 (Hotfix da Biblioteca 2.0)
  * Cérebro central da Calculadora de DPS.
  *
  * PROTOCOLO DE PERFORMANCE (v5.0.1):
@@ -8,15 +8,12 @@
  * 3. Gerar um commit com base nos modelos pré-concebidos.
  * 4. Repetir 1 e 2.
  *
- * ATUALIZAÇÃO v5.0.0 (Redesign):
- * - (BUG D&D) O bug do D&D foi CORRIGIDO.
- * - (CAUSA) A causa raiz (overflow:hidden) foi REMOVIDA do index.html.
- * - (SOLUÇÃO) Os hotfixes (fallbackOnBody, forceFallback, z-index) foram REMOVIDOS
- * do `setupDragAndDrop` pois não são mais necessários. O D&D funciona nativamente.
- * - (CSS) `switchTab` foi atualizado para usar as novas classes `.tab-button-gold`.
- * - (CSS) `createBibliotecaElement` foi atualizado para usar as novas classes `.biblioteca-item`.
- * - (CSS) `showRecipe` foi atualizado.
- * - (Fontes) O design agora usa 'Cinzel' e 'Inter'.
+ * ATUALIZAÇÃO v5.0.3 (Hotfix 2):
+ * - (BUG) A biblioteca v5.0.2 ainda falha ao filtrar/zerar (fome).
+ * - (CAUSA) `item.style.display = ''` (a correção v5.0.2) é insegura.
+ * - (SOLUÇÃO) `handleFiltro` agora usa `item.style.removeProperty('display')`.
+ * Esta é a ação de alta performance para forçar o item a reverter ao
+ * seu estado `display: grid` do CSS, corrigindo o bug.
  */
 
 // --- Estado Global da Aplicação ---
@@ -52,7 +49,7 @@ let currentState = {
  */
 function init() {
     // Comentário (Debug): Confirma que o JS foi carregado e está executando.
-    console.log("Cérebro carregado. Iniciando protocolo de sobrevivência. Layout v5.0.1 (Azul/Dourado) ativo.");
+    console.log("Cérebro carregado. Iniciando protocolo de sobrevivência. Layout v5.0.3 (Hotfix Filtro) ativo.");
     
     // --- (v3.1.0) Exibe a Versão do Patch ---
     const patchVersionEl = document.getElementById('patch-version');
@@ -478,6 +475,8 @@ function populateBiblioteca(championData, itemData) {
         }
     }
     console.log(`Biblioteca populada com ${bibliotecaLista.children.length} elementos.`);
+    
+    // Comentário: (v5.0.2) Chama o filtro após a biblioteca estar 100% populada
     handleFiltro();
 }
 
@@ -737,7 +736,7 @@ function renderDPS(dps) {
 }
 
 /**
- * Filtra os itens na biblioteca com base no input E na aba ativa.
+ * (v5.0.3 - HOTFIX 2) Filtra os itens na biblioteca com base no input E na aba ativa.
  */
 function handleFiltro() {
     const termoInput = document.getElementById('filtro-biblioteca');
@@ -751,9 +750,6 @@ function handleFiltro() {
 
     const itens = bibliotecaLista.querySelectorAll('div[data-id]'); 
     
-    // Comentário: (v4.1.0) A biblioteca é um 'grid', usamos 'block'.
-    const displayType = 'block'; 
-
     for (const item of itens) {
         const img = item.querySelector('img');
         if (img) {
@@ -764,8 +760,12 @@ function handleFiltro() {
             const matchesTab = (type === activeType);
 
             if (matchesTermo && matchesTab) {
-                item.style.display = displayType;
+                // Comentário: (v5.0.3) Ação de Alta Performance:
+                // Remove a propriedade 'display' do inline style.
+                // Isso força o item a obedecer o CSS (`display: grid`).
+                item.style.removeProperty('display');
             } else {
+                // Comentário: (v5.0.3) Esconde o item.
                 item.style.display = 'none';
             }
         }
