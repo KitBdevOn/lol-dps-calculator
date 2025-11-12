@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- 
-  v3.1.0 - Otimização de Layout e Correção de Bugs
+  v3.2.0 - Otimização de Layout (Viewport Fixo 4x4)
   Protocolo:
   1. Nossa Máxima: Desperdício de energia é fome e desespero.
   2. Tudo deve estar comentado: Para guia, debug e brainstorming.
@@ -188,11 +188,13 @@
             </div>
             
             <!-- Área da Biblioteca (Scroll) -->
-            <!-- Comentário: (CORREÇÃO v3.1.0 - BUG 2) grid-cols-4 como solicitado -->
-            <div id="biblioteca-lista" class="grid grid-cols-4 gap-2 overflow-y-auto flex-1 p-2 bg-gray-dark rounded-b-lg rounded-tr-lg content-start justify-items-center">
+            <!-- ****** INÍCIO DA CORREÇÃO (v3.2.0) ****** -->
+            <!-- Comentário: (Refatoração v3.2.0) Altura fixa de 4x4 (344px) e remoção de 'flex-1'. -->
+            <div id="biblioteca-lista" class="grid grid-cols-4 gap-2 overflow-y-auto h-[344px] p-2 bg-gray-dark rounded-b-lg rounded-tr-lg content-start justify-items-center">
                 <!-- Comentário: Placeholders são substituídos pelo app.js -->
                 <div class="w-20 h-20 bg-gray-light rounded-lg animate-pulse"></div>
             </div>
+            <!-- ****** FIM DA CORREÇÃO (v3.2.0) ****** -->
 
             <!-- Bloco de Receita (NOVO v3.0.0) -->
             <div class="mt-4">
