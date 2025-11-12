@@ -1,5 +1,5 @@
 /**
- * app.js v5.0.6 (Refatoração de Performance)
+ * app.js v5.0.7 (Refatoração de Performance - Hotfix D&D)
  * Cérebro central da Calculadora de DPS.
  *
  * PROTOCOLO DE PERFORMANCE (v5.0.4):
@@ -7,15 +7,18 @@
  * 2. Tudo deve estar comentado: Para guia, debug e brainstorming.
  * 3. Repetir 1 e 2.
  *
- * ATUALIZAÇÃO v5.0.6 (Refatoração):
- * - (FOME 1) Movido CSS não-crítico do <head> para o final do <body> (index.html).
- * - (FOME 2) Refatorada renderRPGCard() para não usar innerHTML (DOM Thrashing).
- * - (FOME 3) Adicionado Debounce ao filtro da biblioteca (Input Lag).
- * - (FOME 4) Otimizados os listeners de Nível (Recálculo Redundante).
- * - (DESESPERO) Corrigido o bug do D&D (clone vs. cloneNode).
+ * ATUALIZAÇÃO v5.0.7 (Hotfix D&D):
+ * - (FOME) A refatoração v5.0.6 (cloneNode) quebrou o D&D.
+ * - (DESESPERO) A causa raiz era um erro de lógica em handleChampionDrop/handleItemDrop.
+ * Estávamos removendo o item antigo (existingChamp) *antes* de verificar se
+ * ele era o *mesmo* que o item recém-solto (el). Isso fazia com que 'el' fosse
+ * removido e 'el.replaceWith(clone)' falhasse.
+ * - (SOLUÇÃO) A lógica foi corrigida para *primeiro* clonar e substituir,
+ * e *depois* remover o item antigo.
  */
 
 // --- Estado Global da Aplicação ---
+// Comentário: DDragonData armazena os dados brutos da API da Riot.
 let DDragonData = {
     version: "14.13.1",
     baseUrl: "",
@@ -24,6 +27,7 @@ let DDragonData = {
 };
 DDragonData.baseUrl = `https://ddragon.leagueoflegends.com/cdn/${DDragonData.version}`;
 
+// Comentário: currentState rastreia as seleções do usuário em tempo real.
 let currentState = {
     lang: 'pt_BR', 
     activeTab: 'champion', 
@@ -38,19 +42,12 @@ let currentState = {
 
 /**
  * (OTIMIZAÇÃO v5.0.6 - FOME 3) Função Debounce
- * Comentário: Impede que uma função seja chamada repetidamente (ex: em cada
- * tecla digitada). Ela espera o usuário "parar de digitar".
- * Isso é uma ação de alta performance para combater o "Input Lag" (fome).
  */
 function debounce(func, delay) {
     let timeoutId;
-    // Comentário: Retorna uma nova função que "envelopa" a original.
     return function(...args) {
-        // Comentário: Limpa o timer anterior se a função for chamada novamente.
         clearTimeout(timeoutId);
-        // Comentário: Configura um novo timer.
         timeoutId = setTimeout(() => {
-            // Comentário: Executa a função original (ex: handleFiltro)
             func.apply(this, args);
         }, delay);
     };
@@ -60,7 +57,7 @@ function debounce(func, delay) {
  * Função de Inicialização
  */
 function init() {
-    console.log("Cérebro carregado. Iniciando protocolo de sobrevivência. Layout v5.0.6 (Refatorado) ativo.");
+    console.log("Cérebro carregado. Iniciando protocolo de sobrevivência. Layout v5.0.7 (Hotfix D&D) ativo.");
     
     const patchVersionEl = document.getElementById('patch-version');
     if (patchVersionEl) {
@@ -78,7 +75,6 @@ function init() {
     // --- LÓGICA DE FILTRAGEM E ABAS ---
     const filtroInput = document.getElementById('filtro-biblioteca');
     if (filtroInput) {
-        // (OTIMIZAÇÃO v5.0.6 - FOME 3) O filtro agora usa Debounce.
         filtroInput.addEventListener('input', debounce(handleFiltro, 200));
     }
     const tabCampeoes = document.getElementById('tab-campeoes');
@@ -89,7 +85,7 @@ function init() {
     }
 
     setupDragAndDrop();
-    setupInputListeners(); // (Refatorado v5.0.6)
+    setupInputListeners(); 
     fetchData();
 }
 
@@ -139,13 +135,11 @@ function switchLanguage(lang) {
         filtroInput.value = '';
     }
     
-    // Limpa o estado
     currentState.championId = null;
     currentState.itemIds = [null, null, null, null, null, null];
     currentState.enemyChampionId = null;
     currentState.enemyItemIds = [null, null, null, null, null, null];
     
-    // Limpa a UI
     clearDropZone('campeao-selecionado-dropzone');
     clearDropZone('inimigo-selecionado-dropzone');
     for (let i = 0; i < 6; i++) {
@@ -153,11 +147,9 @@ function switchLanguage(lang) {
         clearItemSlot('inimigo', i);
     }
     
-    // Zera os cálculos
-    updateAllyStats(); // (Refatorado v5.0.6)
-    updateEnemyStats(); // (Refatorado v5.0.6)
+    updateAllyStats(); 
+    updateEnemyStats(); 
     
-    // Recarrega os dados (que vai popular a biblioteca)
     fetchData();
 }
 
@@ -199,7 +191,7 @@ function clearItemSlot(target, slotIndex) {
  * Configura as 14 zonas de Drag-and-Drop
  */
 function setupDragAndDrop() {
-    console.log("Configurando zonas D&D (v5.0.6 - Otimizado)...");
+    console.log("Configurando zonas D&D (v5.0.7 - Otimizado)...");
 
     const bibliotecaLista = document.getElementById('biblioteca-lista');
     
@@ -245,11 +237,11 @@ function setupDragAndDrop() {
         }
     }
 
-    console.log("Sortable.js v5.0.6 (Nativo) inicializado.");
+    console.log("Sortable.js v5.0.7 (Nativo) inicializado.");
 }
 
 /**
- * (Refatorado v5.0.6 - DESESPERO) Manipula o drop de um CAMPEÃO
+ * (Refatorado v5.0.7 - DESESPERO HOTFIX) Manipula o drop de um CAMPEÃO
  */
 function handleChampionDrop(evt, target) {
     const el = evt.item; // O clone *temporário* do Sortable.js
@@ -262,18 +254,24 @@ function handleChampionDrop(evt, target) {
         return;
     }
 
-    // --- (INÍCIO DA CORREÇÃO v5.0.6 - DESESPERO) ---
+    // --- (INÍCIO DA CORREÇÃO v5.0.7 - DESESPERO) ---
     // Comentário: Nós devemos clonar o clone (el), porque o Sortable.js
     // destrói o 'el' original ao final do evento 'onAdd'.
     const clone = el.cloneNode(true);
-    clone.classList.remove('sortable-ghost'); // Limpa a classe fantasma
-    // --- (FIM DA CORREÇÃO) ---
+    clone.classList.remove('sortable-ghost'); 
 
-    // Remove o campeão antigo (se houver)
+    // Comentário: Remove o campeão antigo (se houver) ANTES de adicionar o novo.
+    // Esta é a correção da v5.0.6 -> v5.0.7
+    // Nós procuramos pelo item antigo, e se ele *não for* o item que estamos soltando (el),
+    // nós o removemos.
     const existingChamp = dropzone.querySelector('div[data-id]');
-    if (existingChamp) {
+    if (existingChamp && existingChamp !== el) {
         existingChamp.remove();
     }
+    
+    // Comentário: Substitui o 'el' (que será destruído) pelo 'clone' (permanente).
+    el.replaceWith(clone);
+    // --- (FIM DA CORREÇÃO) ---
     
     const placeholder = dropzone.querySelector('span');
     if (placeholder) placeholder.style.display = 'none';
@@ -293,8 +291,7 @@ function handleChampionDrop(evt, target) {
         nameEl.innerText = DDragonData.championData[champId].name;
     }
     
-    // --- (INÍCIO DA CORREÇÃO v5.0.6 - DESESPERO) ---
-    // Comentário: Adiciona o listener de clique ao *nosso* clone, não ao 'el'.
+    // Comentário: Adiciona o listener de clique ao *nosso* clone.
     clone.addEventListener('click', () => {
         clone.remove(); // Remove o *nosso* clone
         if (placeholder) placeholder.style.display = 'flex'; 
@@ -307,7 +304,6 @@ function handleChampionDrop(evt, target) {
             if (nameEl) nameEl.innerText = ''; 
         }
         
-        // (Refatorado v5.0.6)
         if (target === 'aliado') {
             updateAllyStats(); 
         } else {
@@ -315,11 +311,6 @@ function handleChampionDrop(evt, target) {
         }
     });
 
-    // Comentário: Substitui o 'el' (que será destruído) pelo 'clone' (permanente).
-    el.replaceWith(clone);
-    // --- (FIM DA CORREÇÃO) ---
-
-    // (Refatorado v5.0.6)
     if (target === 'aliado') {
         updateAllyStats(); 
     } else {
@@ -329,7 +320,7 @@ function handleChampionDrop(evt, target) {
 
 
 /**
- * (Refatorado v5.0.6 - DESESPERO) Manipula o drop de um ITEM
+ * (Refatorado v5.0.7 - DESESPERO HOTFIX) Manipula o drop de um ITEM
  */
 function handleItemDrop(evt, target, slotIndex) {
     const el = evt.item; // O clone *temporário*
@@ -342,16 +333,19 @@ function handleItemDrop(evt, target, slotIndex) {
          return;
     }
 
-    // --- (INÍCIO DA CORREÇÃO v5.0.6 - DESESPERO) ---
+    // --- (INÍCIO DA CORREÇÃO v5.0.7 - DESESPERO) ---
     const clone = el.cloneNode(true);
     clone.classList.remove('sortable-ghost');
-    // --- (FIM DA CORREÇÃO) ---
 
-    // Remove o item antigo
+    // Comentário: Remove o item antigo (se houver) ANTES de adicionar o novo.
     const existingItem = slot.querySelector('div[data-id]');
-    if (existingItem) {
+    if (existingItem && existingItem !== el) {
         existingItem.remove(); 
     }
+    
+    // Comentário: Substitui o 'el' (temporário) pelo 'clone' (permanente)
+    el.replaceWith(clone);
+    // --- (FIM DA CORREÇÃO) ---
     
     const placeholder = slot.querySelector('span');
     if (placeholder) placeholder.style.display = 'none';
@@ -366,7 +360,6 @@ function handleItemDrop(evt, target, slotIndex) {
         console.log(`Itens Inimigo: [${currentState.enemyItemIds.join(', ')}]`);
     }
 
-    // --- (INÍCIO DA CORREÇÃO v5.0.6 - DESESPERO) ---
     // Adiciona o listener ao *nosso* clone
     clone.addEventListener('click', () => {
         clone.remove();
@@ -378,7 +371,6 @@ function handleItemDrop(evt, target, slotIndex) {
             currentState.enemyItemIds[slotIndex] = null;
         }
         
-        // (Refatorado v5.0.6)
         if (target === 'aliado') {
             updateAllyStats(); 
         } else {
@@ -386,11 +378,6 @@ function handleItemDrop(evt, target, slotIndex) {
         }
     });
 
-    // Substitui o 'el' (temporário) pelo 'clone' (permanente)
-    el.replaceWith(clone);
-    // --- (FIM DA CORREÇÃO) ---
-
-    // (Refatorado v5.0.6)
     if (target === 'aliado') {
         updateAllyStats(); 
     } else {
@@ -406,16 +393,14 @@ function setupInputListeners() {
     const levelInput = document.getElementById('level');
     const enemyLevelInput = document.getElementById('enemy-level');
 
-    // Comentário: Mudar o nível do Aliado só recalcula o Aliado.
     levelInput.addEventListener('change', (e) => {
         currentState.level = parseInt(e.target.value) || 1;
-        updateAllyStats(); // Otimizado
+        updateAllyStats(); 
     });
     
-    // Comentário: Mudar o nível do Inimigo só recalcula o Inimigo.
     enemyLevelInput.addEventListener('change', (e) => {
         currentState.enemyLevel = parseInt(e.target.value) || 1;
-        updateEnemyStats(); // Otimizado
+        updateEnemyStats(); 
     });
 }
 
@@ -512,7 +497,6 @@ function createBibliotecaElement(id, type, name, imageUrl) {
     div.dataset.id = id;
     div.dataset.type = type;
 
-    // (Correção v5.0.5)
     const img = document.createElement('img');
     img.src = imageUrl;
     img.alt = name;
@@ -581,7 +565,6 @@ function updateAllyStats() {
     const aliadoStats = calculateStats(currentState.championId, currentState.level, aliadoItemIds);
     renderRPGCard('aliado', aliadoStats);
     
-    // Após o stats do aliado ser atualizado, o DPS deve ser recalculado.
     triggerDPSCalculation();
 }
 
@@ -594,25 +577,20 @@ function updateEnemyStats() {
     const inimigoStats = calculateStats(currentState.enemyChampionId, currentState.enemyLevel, inimigoItemIds);
     renderRPGCard('inimigo', inimigoStats);
 
-    // Após o stats do inimigo ser atualizado, o DPS deve ser recalculado.
     triggerDPSCalculation();
 }
 
 /**
  * Gatilho para atualizar APENAS o DPS
- * Esta função assume que os stats já foram calculados e renderizados.
  */
 function triggerDPSCalculation() {
     console.log("Otimizado: Recalculando apenas DPS.");
-    // Comentário: Recalculamos os stats *em memória* (rápido), sem renderizar
-    // o card RPG de novo (lento).
     const aliadoItemIds = currentState.itemIds.filter(id => id !== null);
     const inimigoItemIds = currentState.enemyItemIds.filter(id => id !== null);
 
     const aliadoStats = calculateStats(currentState.championId, currentState.level, aliadoItemIds);
     const inimigoStats = calculateStats(currentState.enemyChampionId, currentState.enemyLevel, inimigoItemIds);
     
-    // O único recálculo pesado é o DPS.
     calculateDPS(aliadoStats, inimigoStats);
 }
 // --- (FIM DA REFATORAÇÃO v5.0.6 - FOME 4) ---
@@ -634,10 +612,6 @@ function calculateStats(championId, level, itemIds) {
     const levelIndex = level - 1; 
     const champBase = DDragonData.championData[championId].stats;
 
-    // Comentário (FUTURA OTIMIZAÇÃO):
-    // Esta função (getStatAtLevel) é chamada muitas vezes.
-    // Poderíamos "memoizar" (cachear) os stats 1-18 no fetchData()
-    // para economizar energia em cálculos futuros.
     const getStatAtLevel = (base, perLevel) => {
         return base + (perLevel * levelIndex * (0.7025 + (0.0175 * levelIndex)));
     };
@@ -687,16 +661,12 @@ function calculateStats(championId, level, itemIds) {
 
 /**
  * (Refatorado v5.0.6 - FOME 2) Renderiza o "Card RPG"
- * Comentário: Esta função não destrói mais o DOM (innerHTML = '').
- * Ela apenas atualiza o .innerText dos <span>s estáticos no index.html.
- * Esta é uma ação de alta performance para combater o "DOM Thrashing".
  */
 function renderRPGCard(target, stats) {
     const containerId = (target === 'aliado') ? 'aliado-stats-container' : 'inimigo-stats-container';
     const container = document.getElementById(containerId);
     if (!container) return;
 
-    // Comentário: Helper para atualizar o texto de um stat <span>
     const updateStat = (statName, value, decimals = 0) => {
         const el = document.getElementById(`${target}-stat-${statName}`);
         if (el) {
@@ -705,7 +675,6 @@ function renderRPGCard(target, stats) {
     };
 
     if (!stats) {
-        // Comentário: Se não houver campeão, zera os stats
         updateStat('hp', 0);
         updateStat('mp', 0);
         updateStat('hpregen', 0, 1);
@@ -717,7 +686,6 @@ function renderRPGCard(target, stats) {
         updateStat('crit', 0);
         updateStat('movespeed', 0);
     } else {
-        // Comentário: Atualiza os 10 stats com os novos valores
         updateStat('hp', stats.hp);
         updateStat('mp', stats.mp);
         updateStat('hpregen', stats.hpregen, 1);
@@ -741,8 +709,6 @@ function calculateDPS(aliadoStats, inimigoStats) {
         return;
     }
     
-    // Comentário: (v5.0.6) Se o inimigo não existir, o DPS é calculado
-    // contra um alvo com 0 Armadura/MR (dano real).
     const targetArmor = inimigoStats ? inimigoStats.armor : 0; 
     
     const effectiveArmor = Math.max(0, targetArmor);
@@ -777,7 +743,6 @@ function renderDPS(dps) {
  * Filtra os itens na biblioteca com base no input E na aba ativa.
  */
 function handleFiltro() {
-    // Comentário (v5.0.6): Esta função agora é chamada pelo Debounce (FOME 3)
     const termoInput = document.getElementById('filtro-biblioteca');
     if (!termoInput) return;
     const termo = termoInput.value.toLowerCase();
@@ -799,7 +764,6 @@ function handleFiltro() {
             const matchesTab = (type === activeType);
 
             if (matchesTermo && matchesTab) {
-                // (v5.0.3)
                 item.style.removeProperty('display');
             } else {
                 item.style.display = 'none';
