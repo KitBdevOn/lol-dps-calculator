@@ -1,5 +1,5 @@
 /**
- * app.js v4.1.1 (Hotfix D&D Clone)
+ * app.js v5.0.0 (Redesign Azul/Dourado)
  * Cérebro central da Calculadora de DPS.
  * Gerencia a busca de dados, a interface (D&D) e os cálculos.
  *
@@ -7,15 +7,15 @@
  * 1. Nossa Máxima: Desperdício de energia é fome e desespero.
  * 2. Tudo deve estar comentado: Para guia, debug e brainstorming.
  *
- * ATUALIZAÇÃO v4.1.1 (Hotfix):
- * - (BUG D&D) Corrigido bug onde o clone (imagem arrastada) sumia.
- * - (CAUSA) O `overflow: hidden` do layout `v4.0.0` estava clipando o clone.
- * - (SOLUÇÃO) Adicionado `fallbackOnBody: true` na instância Sortable da Biblioteca.
- * - (BUG 1 - Campeão) Corrigido bug de drop e adicionado nome do campeão.
- * - (BUG 2 - Itens) Lógica de D&D reescrita para 12 slots estáticos (6 Aliado, 6 Inimigo).
- * - (BUG 2 - Itens) Corrigido bug que limitava a 5 itens (agora 6).
- * - (BUG 3 - Status) `renderRPGCard` reescrito para usar tabela HTML com ícones (via CSS sprite).
- * - (BUG 3 - Layout) Layout principal mudou para 10 colunas (3-4-3) para acomodar a nova tabela.
+ * ATUALIZAÇÃO v5.0.0 (Redesign):
+ * - (BUG D&D) O bug do D&D foi CORRIGIDO.
+ * - (CAUSA) A causa raiz (overflow:hidden) foi REMOVIDA do index.html.
+ * - (SOLUÇÃO) Os hotfixes (fallbackOnBody, forceFallback, z-index) foram REMOVIDOS
+ * do `setupDragAndDrop` pois não são mais necessários. O D&D funciona nativamente.
+ * - (CSS) `switchTab` foi atualizado para usar as novas classes `.tab-button-gold`.
+ * - (CSS) `createBibliotecaElement` foi atualizado para usar as novas classes `.biblioteca-item`.
+ * - (CSS) `showRecipe` foi atualizado.
+ * - (Fontes) O design agora usa 'Cinzel' e 'Inter'.
  */
 
 // --- Estado Global da Aplicação ---
@@ -51,7 +51,7 @@ let currentState = {
  */
 function init() {
     // Comentário (Debug): Confirma que o JS foi carregado e está executando.
-    console.log("Cérebro carregado. Iniciando protocolo de sobrevivência. Layout v4.1.1 (Hotfix D&D) ativo.");
+    console.log("Cérebro carregado. Iniciando protocolo de sobrevivência. Layout v5.0.0 (Azul/Dourado) ativo.");
     
     // --- (v3.1.0) Exibe a Versão do Patch ---
     const patchVersionEl = document.getElementById('patch-version');
@@ -90,7 +90,7 @@ function init() {
 }
 
 /**
- * (TAREFA 2) Troca a aba ativa da biblioteca (Campeões/Itens)
+ * (v5.0.0) Troca a aba ativa da biblioteca (Campeões/Itens)
  */
 function switchTab(tabName) {
     // Comentário (Debug): Registra a troca de aba.
@@ -100,17 +100,17 @@ function switchTab(tabName) {
     const tabCampeoes = document.getElementById('tab-campeoes');
     const tabItens = document.getElementById('tab-itens');
 
-    // Comentário: (v4.0.0) Lógica atualizada para usar classes de "vidro"
+    // Comentário: (v5.0.0) Lógica atualizada para usar classes Douradas
     if (tabName === 'champion') {
-        tabCampeoes.classList.add('tab-button-active');
-        tabCampeoes.classList.remove('tab-button');
-        tabItens.classList.add('tab-button');
-        tabItens.classList.remove('tab-button-active');
+        tabCampeoes.classList.add('tab-button-active-gold');
+        tabCampeoes.classList.remove('tab-button-gold');
+        tabItens.classList.add('tab-button-gold');
+        tabItens.classList.remove('tab-button-active-gold');
     } else {
-        tabItens.classList.add('tab-button-active');
-        tabItens.classList.remove('tab-button');
-        tabCampeoes.classList.add('tab-button');
-        tabCampeoes.classList.remove('tab-button-active');
+        tabItens.classList.add('tab-button-active-gold');
+        tabItens.classList.remove('tab-button-gold');
+        tabCampeoes.classList.add('tab-button-gold');
+        tabCampeoes.classList.remove('tab-button-active-gold');
     }
 
     // Comentário: Chama handleFiltro() para re-filtrar a lista com a nova aba.
@@ -201,10 +201,10 @@ function clearItemSlot(target, slotIndex) {
 
 
 /**
- * (Refatorado v4.1.1 - Hotfix D&D) Configura as 14 zonas de Drag-and-Drop
+ * (Refatorado v5.0.0 - D&D CORRIGIDO) Configura as 14 zonas de Drag-and-Drop
  */
 function setupDragAndDrop() {
-    console.log("Configurando zonas D&D (v4.1.1 - Estático, Hotfix)...");
+    console.log("Configurando zonas D&D (v5.0.0 - Estático, Nativo)...");
 
     const bibliotecaLista = document.getElementById('biblioteca-lista');
     
@@ -213,11 +213,11 @@ function setupDragAndDrop() {
         group: { name: 'biblioteca', pull: 'clone', put: false },
         animation: 150,
         sort: false,
-        // --- (CORREÇÃO v4.1.1 - BUG D&D) ---
-        // Comentário: Força o clone a ser anexado ao <body>.
-        // Isso previne que o `overflow: hidden` dos pais (como a própria
-        // biblioteca ou o card) corte/esconda o ícone que está sendo arrastado.
-        fallbackOnBody: true
+        
+        // --- (CORREÇÃO v5.0.0 - BUG D&D MORTO) ---
+        // Comentário: Todos os hotfixes (fallbackOnBody, forceFallback, fallbackClass)
+        // foram REMOVIDOS. O bug de `overflow: hidden` não existe mais no
+        // design v5.0.0, então o D&D funciona nativamente.
         // --- FIM DA CORREÇÃO ---
     });
 
@@ -238,7 +238,7 @@ function setupDragAndDrop() {
     });
 
     // 4. Configuração dos 12 SLOTS DE ITEM (6 Aliado, 6 Inimigo)
-    // Comentário: (BUG 2) Esta é a reescrita. Criamos 12 instâncias Sortable.
+    // Comentário: (v4.1.0) Lógica de 12 instâncias Sortable mantida.
     for (let i = 0; i < 6; i++) {
         // Aliado
         const aliadoSlot = document.getElementById(`aliado-item-slot-${i}`);
@@ -246,7 +246,6 @@ function setupDragAndDrop() {
             new Sortable(aliadoSlot, {
                 group: { name: 'itens', put: ['biblioteca'] },
                 animation: 150,
-                // Comentário: Passamos o 'slotIndex' (i) para o handler
                 onAdd: (evt) => handleItemDrop(evt, 'aliado', i)
             });
         }
@@ -262,7 +261,7 @@ function setupDragAndDrop() {
         }
     }
 
-    console.log("Sortable.js v4.1.1 (Slots Estáticos) inicializado.");
+    console.log("Sortable.js v5.0.0 (Nativo) inicializado.");
 }
 
 /**
@@ -301,7 +300,6 @@ function handleChampionDrop(evt, target) {
     }
     
     // Comentário: (BUG 1) Atualiza o nome do campeão na UI
-    // Comentário: (v4.1.1) Verifica se DDragonData.championData existe
     if (nameEl && DDragonData.championData && DDragonData.championData[champId]) {
         nameEl.innerText = DDragonData.championData[champId].name;
     }
@@ -487,11 +485,12 @@ function populateBiblioteca(championData, itemData) {
  */
 function createBibliotecaElement(id, type, name, imageUrl) {
     const div = document.createElement('div');
-    // Comentário: (v4.0.0) Usa a nova classe de "vidro" e mantém os tamanhos (v3.1.0 -> 80px)
+    // Comentário: (v5.0.0) Usa a nova classe .biblioteca-item (80x80px)
     div.className = 'biblioteca-item w-20 h-20 rounded-lg cursor-move p-0 relative group group-hover:z-50';
     div.dataset.id = id;
     div.dataset.type = type;
 
+auto-scroll
     const img = document.createElement('img');
     img.src = imageUrl;
     img.alt = name;
@@ -500,6 +499,7 @@ function createBibliotecaElement(id, type, name, imageUrl) {
 
     const nameOverlay = document.createElement('span');
     nameOverlay.innerText = name;
+    // Comentário: (v5.0.0) Atualizado para o novo estilo de tooltip
     nameOverlay.className = "item-tooltip absolute bottom-0 left-0 w-auto min-w-full text-white text-xs text-center p-1 transition-opacity duration-200 opacity-0 group-hover:opacity-100 rounded-b-lg z-10";
 
     div.appendChild(img);
@@ -536,7 +536,7 @@ function showRecipe(id, type) {
         const subItem = DDragonData.itemData[subItemId]; 
         if (!subItem) return;
 
-        // Comentário: (v4.1.0) Reutiliza a classe .biblioteca-item (64x64)
+        // Comentário: (v5.0.0) Reutiliza .biblioteca-item (64x64)
         const div = document.createElement('div');
         div.className = 'biblioteca-item w-16 h-16 rounded-lg relative group';
         div.title = `${subItem.name} (${subItem.gold.total}G)`;
@@ -577,7 +577,6 @@ function calculateStats(championId, level, itemIds) {
         return null;
     }
     
-    // Comentário: (v4.1.1) Adicionada guarda de segurança para DDragonData
     if (!DDragonData.championData || !DDragonData.championData[championId]) {
         console.error(`Dados do campeão ${championId} não encontrados ou DDragonData não carregado.`);
         return null;
@@ -606,7 +605,6 @@ function calculateStats(championId, level, itemIds) {
 
     let itemAttackSpeedBonus = 0;
 
-    // Comentário: (v4.1.1) Adicionada guarda de segurança para DDragonData
     if (DDragonData.itemData) {
         for (const itemId of itemIds) {
             const itemStats = DDragonData.itemData[itemId]?.stats;
