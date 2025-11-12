@@ -78,10 +78,26 @@
 </head>
 <body class="p-0">
 
-    <!-- AD BANNER TOPO (TAREFA 4) -->
-    <header id="adsense-top-banner" class="w-full h-24 bg-gray-dark flex items-center justify-center text-gray-500 shadow-lg z-10">
-        <!-- Comentário: Unidade de Anúncio Horizontal (ex: 728x90) deve ser inserida aqui -->
-        Espaço para Anúncio (Topo 728x90)
+    <!-- AD BANNER TOPO (TAREFA 4) E SELEÇÃO DE IDIOMA (v2.2.0) -->
+    <!-- Comentário (i18n): Header modificado para incluir seleção de idioma -->
+    <header id="main-header" class="w-full h-24 bg-gray-dark flex items-center justify-between p-4 shadow-lg z-10">
+        
+        <!-- Comentário: Botões de Idioma (i18n) -->
+        <div class="flex gap-2">
+            <!-- Comentário: 'opacity-100' é a aba ativa, 'opacity-50' é a inativa -->
+            <!-- Comentário: Usamos emojis para performance (sem carregar imagens) -->
+            <button id="lang-br" class="text-2xl opacity-100 hover:opacity-100 transition-opacity duration-200" title="Mudar para Português (BR)">🇧🇷</button>
+            <button id="lang-us" class="text-2xl opacity-50 hover:opacity-100 transition-opacity duration-200" title="Mudar para Inglês (US)">🇺🇸</button>
+        </div>
+
+        <!-- Comentário: AdSense Top Banner -->
+        <div id="adsense-top-banner" class="flex-grow h-full flex items-center justify-center text-gray-500">
+            <!-- Comentário: Unidade de Anúncio Horizontal (ex: 728x90) deve ser inserida aqui -->
+            Espaço para Anúncio (Topo 728x90)
+        </div>
+
+        <!-- Comentário: Placeholder à direita para manter o ad centralizado -->
+        <div class="w-16"></div>
     </header>
 
     <!-- ÁREA PRINCIPAL DO APP (flex-1 para preencher o espaço) -->

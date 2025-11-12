@@ -7,9 +7,13 @@
  * 1. Nossa Máxima: Desperdício de energia é fome e desespero.
  * 2. Tudo deve estar comentado: Para guia, debug e brainstorming.
  *
- * ATUALIZAÇÃO v2.0.0:
- * - Implementado filtro de Abas (Campeões/Itens) (Tarefa 2)
- * - Lógica de filtro (handleFiltro) atualizada para suportar abas.
+ * ATUALIZAÇÃO v2.2.0 (Aplicada sobre v2.1.1):
+ * - Implementado switch de idioma (i18n) (pt_BR / en_US)
+ * - Header modificado no HTML
+ * - Estado global atualizado com 'lang'
+ * - `init()` atualizada com listeners de idioma
+ * - `fetchData()` atualizada para usar 'lang'
+ * - Nova função `switchLanguage()` adicionada
  */
 
 // --- Estado Global da Aplicação ---
@@ -24,6 +28,7 @@ DDragonData.baseUrl = `https://ddragon.leagueoflegends.com/cdn/${DDragonData.ver
 
 // Comentário: currentState rastreia as seleções do usuário em tempo real.
 let currentState = {
+    lang: 'pt_BR', // Comentário: (i18n) O idioma padrão (pt_BR ou en_US)
     championId: null,
     level: 1,
     itemIds: [],
@@ -44,6 +49,16 @@ function init() {
     // Comentário (Debug): Confirma que o JS foi carregado e está executando.
     console.log("Cérebro carregado. Iniciando protocolo de sobrevivência. Layout 'Streaming' ativo.");
     
+    // --- LÓGICA DE IDIOMA (i18n) ---
+    // Comentário: Adiciona listeners aos botões de bandeira.
+    const langBR = document.getElementById('lang-br');
+    const langUS = document.getElementById('lang-us');
+    if (langBR && langUS) {
+        langBR.addEventListener('click', () => switchLanguage('pt_BR'));
+        langUS.addEventListener('click', () => switchLanguage('en_US'));
+    }
+    // --- FIM DA LÓGICA DE IDIOMA ---
+
     // --- LÓGICA DE FILTRAGEM E ABAS (Tarefas 2 e Otimização) ---
     // Comentário: Ativa o listener do campo de filtro.
     const filtroInput = document.getElementById('filtro-biblioteca');
@@ -101,6 +116,64 @@ function switchTab(tabName) {
 
     // Comentário: Chama handleFiltro() para re-filtrar a lista com a nova aba.
     handleFiltro();
+}
+
+/**
+ * (i18n) Troca o idioma da aplicação
+ * Esta função atualiza o estado, o estilo das bandeiras e recarrega os dados.
+ */
+function switchLanguage(lang) {
+    // Comentário (Debug): Não faz nada se o idioma já estiver ativo (economia de energia).
+    if (currentState.lang === lang) {
+        console.log(`Idioma ${lang} já está ativo.`);
+        return;
+    }
+
+    // Comentário (Debug): Registra a troca.
+    console.log(`Mudando idioma para: ${lang}`);
+    currentState.lang = lang; // Atualiza o estado
+
+    // Comentário: Atualiza a opacidade (estilo) das bandeiras.
+    const langBR = document.getElementById('lang-br');
+    const langUS = document.getElementById('lang-us');
+    if (langBR && langUS) {
+        langBR.style.opacity = (lang === 'pt_BR') ? '1' : '0.5';
+        langUS.style.opacity = (lang === 'en_US') ? '1' : '0.5';
+    }
+
+    // Comentário: Reseta o filtro de busca.
+    const filtroInput = document.getElementById('filtro-biblioteca');
+    if (filtroInput) {
+        filtroInput.value = '';
+    }
+    
+    // Comentário: (Debug) Limpa o estado atual para forçar a recarga visual
+    // (O usuário pode ter um campeão selecionado que terá o nome trocado)
+    currentState.championId = null;
+    currentState.itemIds = [];
+    
+    // Comentário: Limpa visualmente as zonas de drop
+    const campeaoDropzone = document.getElementById('campeao-selecionado-dropzone');
+    const itensDropzone = document.getElementById('itens-selecionados-dropzone');
+    const champPlaceholder = campeaoDropzone.querySelector('span');
+    
+    // Limpa campeão
+    const existingChamp = campeaoDropzone.querySelector('div[data-id]');
+    if (existingChamp) existingChamp.remove();
+    if (champPlaceholder) champPlaceholder.style.display = 'block';
+
+    // Limpa itens
+    const existingItems = itensDropzone.querySelectorAll('div[data-id]');
+    existingItems.forEach(item => item.remove());
+    const itemPlaceholders = itensDropzone.querySelectorAll('.item-slot-placeholder');
+    itemPlaceholders.forEach(p => p.style.display = 'block');
+
+    // Comentário: Zera os cálculos antes de buscar novos dados
+    calculateTotalStats();
+
+    // Comentário: Recarrega todos os dados do Data Dragon no novo idioma.
+    // A função fetchData() já chama a populateBiblioteca().
+    fetchData();
 }
 
 
@@ -266,10 +339,14 @@ async function fetchData() {
     // Comentário (Debug): Inicia a busca de dados na rede.
     console.log(`Iniciando busca de dados da versão ${DDragonData.version}...`);
     try {
+        // Comentário (i18n): Usa o idioma do estado global para buscar os dados.
+        const lang = currentState.lang;
+        console.log(`Buscando dados no idioma: ${lang}`);
+
         // Comentário: Otimização - Busca campeões e itens em paralelo (Promise.all).
         const [champResponse, itemResponse] = await Promise.all([
-            fetch(`${DDragonData.baseUrl}/data/en_US/champion.json`),
-            fetch(`${DDragonData.baseUrl}/data/en_US/item.json`)
+            fetch(`${DDragonData.baseUrl}/data/${lang}/champion.json`),
+            fetch(`${DDragonData.baseUrl}/data/${lang}/item.json`)
         ]);
 
         // Comentário (Debug): Verifica se as requisições falharam.
