@@ -1,11 +1,12 @@
 /**
- * app.js v5.0.0 (Redesign Azul/Dourado)
+ * app.js v5.0.1 (Atualização de Protocolo)
  * Cérebro central da Calculadora de DPS.
- * Gerencia a busca de dados, a interface (D&D) e os cálculos.
  *
- * PROTOCOLO DE PERFORMANCE ATIVO:
+ * PROTOCOLO DE PERFORMANCE (v5.0.1):
  * 1. Nossa Máxima: Desperdício de energia é fome e desespero.
  * 2. Tudo deve estar comentado: Para guia, debug e brainstorming.
+ * 3. Gerar um commit com base nos modelos pré-concebidos.
+ * 4. Repetir 1 e 2.
  *
  * ATUALIZAÇÃO v5.0.0 (Redesign):
  * - (BUG D&D) O bug do D&D foi CORRIGIDO.
@@ -51,7 +52,7 @@ let currentState = {
  */
 function init() {
     // Comentário (Debug): Confirma que o JS foi carregado e está executando.
-    console.log("Cérebro carregado. Iniciando protocolo de sobrevivência. Layout v5.0.0 (Azul/Dourado) ativo.");
+    console.log("Cérebro carregado. Iniciando protocolo de sobrevivência. Layout v5.0.1 (Azul/Dourado) ativo.");
     
     // --- (v3.1.0) Exibe a Versão do Patch ---
     const patchVersionEl = document.getElementById('patch-version');
