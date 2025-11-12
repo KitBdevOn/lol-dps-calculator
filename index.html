@@ -1,22 +1,18 @@
 <!DOCTYPE html>
 <!-- 
-  v5.0.1 - Atualização de Protocolo
+  v5.0.4 - Atualização de Protocolo
   
-  PROTOCOLO DE PERFORMANCE (v5.0.1):
+  PROTOCOLO DE PERFORMANCE (v5.0.4):
   1. Nossa Máxima: Desperdício de energia é fome e desespero.
   2. Tudo deve estar comentado: Para guia, debug e brainstorming.
-  3. Gerar um commit com base nos modelos pré-concebidos.
-  4. Repetir 1 e 2.
+  3. Repetir 1 e 2.
   
-  MUDANÇA v5.0.0:
-  - ABANDONADO o design "Glassmorphism" (v4.x) que causava fome (bugs de D&D).
-  - IMPLEMENTADO o novo design (Azul Marinho / Dourado Metálico).
-  - REMOVIDO o `overflow: hidden` da causa raiz, o que AUTOMATICAMENTE corrige o bug do D&D.
-  - ADICIONADO Fontes (Cinzel/Inter) e novo CSS de degradê.
+  MUDANÇA v5.0.3:
+  - Corrigido o bug da biblioteca (v5.0.2) com `removeProperty('display')`.
 -->
 <html lang="pt-br">
 <head>
-    <meta charset="UTF-TRF-8">
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Calculadora DPS LoL - dragonanalitica</title>
     
@@ -257,9 +253,6 @@
 </head>
 <body class="p-0">
 
-    <!-- (REMOVIDO v5.0.0) O .app-wrapper foi removido. 
-         Não precisamos mais dele, pois o body não tem mais `overflow: hidden`. -->
-
     <!-- AD BANNER TOPO / HEADER (v5.0.0) -->
     <header id="main-header" class="w-full h-24 header-footer flex items-center justify-between p-4 z-10">
         
@@ -282,8 +275,6 @@
 
     <!-- ÁREA PRINCIPAL DO APP (v5.0.0) 
          Comentário: O layout de 10 colunas (3-4-3) foi mantido.
-         Comentário: `overflow-hidden` e `min-h-0` foram removidos da div principal 
-         para permitir que o D&D funcione. O scroll será controlado por coluna.
     -->
     <div class="flex-1 grid grid-cols-1 lg:grid-cols-10 gap-4 p-4">
 
@@ -425,8 +416,6 @@
         Espaço para Anúncio (Rodapé 728x90)
     </footer>
     
-    <!-- (REMOVIDO v5.0.0) O .app-wrapper foi removido. -->
-
     <!-- Cérebro da Aplicação -->
     <script src="app.js"></script>
 </body>

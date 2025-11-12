@@ -1,19 +1,18 @@
 /**
- * app.js v5.0.3 (Hotfix da Biblioteca 2.0)
+ * app.js v5.0.5 (Hotfix Fatal Syntax)
  * Cérebro central da Calculadora de DPS.
  *
- * PROTOCOLO DE PERFORMANCE (v5.0.1):
+ * PROTOCOLO DE PERFORMANCE (v5.0.4):
  * 1. Nossa Máxima: Desperdício de energia é fome e desespero.
  * 2. Tudo deve estar comentado: Para guia, debug e brainstorming.
- * 3. Gerar um commit com base nos modelos pré-concebidos.
- * 4. Repetir 1 e 2.
+ * 3. Repetir 1 e 2.
  *
- * ATUALIZAÇÃO v5.0.3 (Hotfix 2):
- * - (BUG) A biblioteca v5.0.2 ainda falha ao filtrar/zerar (fome).
- * - (CAUSA) `item.style.display = ''` (a correção v5.0.2) é insegura.
- * - (SOLUÇÃO) `handleFiltro` agora usa `item.style.removeProperty('display')`.
- * Esta é a ação de alta performance para forçar o item a reverter ao
- * seu estado `display: grid` do CSS, corrigindo o bug.
+ * ATUALIZAÇÃO v5.0.5 (Hotfix):
+ * - (BUG) A biblioteca estava 100% vazia (fome e desespero).
+ * - (CAUSA) Um erro de sintaxe fatal (um 'typo' - "auto-scroll") foi
+ * encontrado na Linha 394 (v5.0.4), quebrando a função
+ * `createBibliotecaElement`.
+ * - (SOLUÇÃO) O typo foi removido.
  */
 
 // --- Estado Global da Aplicação ---
@@ -49,7 +48,7 @@ let currentState = {
  */
 function init() {
     // Comentário (Debug): Confirma que o JS foi carregado e está executando.
-    console.log("Cérebro carregado. Iniciando protocolo de sobrevivência. Layout v5.0.3 (Hotfix Filtro) ativo.");
+    console.log("Cérebro carregado. Iniciando protocolo de sobrevivência. Layout v5.0.5 (Hotfix Syntax) ativo.");
     
     // --- (v3.1.0) Exibe a Versão do Patch ---
     const patchVersionEl = document.getElementById('patch-version');
@@ -490,7 +489,8 @@ function createBibliotecaElement(id, type, name, imageUrl) {
     div.dataset.id = id;
     div.dataset.type = type;
 
-auto-scroll
+    // --- (CORREÇÃO v5.0.5 - REMOVIDO O TYPO "auto-scroll") ---
+
     const img = document.createElement('img');
     img.src = imageUrl;
     img.alt = name;
