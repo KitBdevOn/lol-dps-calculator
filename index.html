@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- 
-  v3.0.1 - CORREÇÃO CRÍTICA DE BUGS
+  v3.1.0 - Otimização de Layout e Correção de Bugs
   Protocolo:
   1. Nossa Máxima: Desperdício de energia é fome e desespero.
   2. Tudo deve estar comentado: Para guia, debug e brainstorming.
@@ -66,13 +66,21 @@
         .sortable-ghost { opacity: 0.4; background-color: #39FF14 !important; }
         .sortable-drag { opacity: 1 !important; }
 
-        /* Comentário: Placeholder para os slots de itens vazios */
+        /* Comentário: (CORREÇÃO v3.1.0 - BUG 2) Ícones 25% maiores (80px) */
         .item-slot-placeholder {
             background-color: rgba(64, 64, 64, 0.3); /* gray-light com transparência */
             border: 2px dashed #404040; /* gray-light */
-            width: 64px; /* 16 * 4 */
-            height: 64px; /* 16 * 4 */
+            width: 80px; /* 20 * 4 (era 64px) */
+            height: 80px; /* 20 * 4 (era 64px) */
             border-radius: 0.5rem; /* rounded-lg */
+        }
+
+        /* Comentário: (CORREÇÃO v3.1.0 - BUG 1) Força o item/campeão solto
+           a preencher 100% da dropzone (que tem w-20 h-20) */
+        #campeao-selecionado-dropzone > div[data-id],
+        #inimigo-selecionado-dropzone > div[data-id] {
+            width: 100% !important;
+            height: 100% !important;
         }
     </style>
 
@@ -100,8 +108,10 @@
             Espaço para Anúncio (Topo 728x90)
         </div>
 
-        <!-- Comentário: Placeholder à direita para manter o ad centralizado -->
-        <div class="w-16"></div>
+        <!-- Comentário: (CORREÇÃO v3.1.0 - BUG 3) Exibição da versão do patch -->
+        <div class="w-32 text-right">
+            <span id="patch-version" class="text-xs text-gray-500" title="Versão do Data Dragon"></span>
+        </div>
     </header>
 
     <!-- ÁREA PRINCIPAL DO APP (flex-1 para preencher o espaço) -->
@@ -115,8 +125,8 @@
             
             <!-- Comentário: (Refatoração v3.0.0) Agrupamento de Campeão e Nível -->
             <div class="bg-gray-dark rounded-lg p-4 flex gap-4 items-center">
-                <!-- Comentário: (Otimização v3.0.0) Dropzone 64x64px -->
-                <div id="campeao-selecionado-dropzone" class="w-16 h-16 bg-gray-darkest rounded-lg flex-shrink-0 flex items-center justify-center border-2 border-dashed border-gray-light text-gray-500 relative">
+                <!-- Comentário: (CORREÇÃO v3.1.0 - BUG 2) Dropzone 80x80px (w-20 h-20) -->
+                <div id="campeao-selecionado-dropzone" class="w-20 h-20 bg-gray-darkest rounded-lg flex-shrink-0 flex items-center justify-center border-2 border-dashed border-gray-light text-gray-500 relative">
                     <!-- Comentário: O span é um placeholder de texto -->
                     <span class="text-center text-xs p-1">Aliado</span>
                 </div>
@@ -128,14 +138,12 @@
                 </div>
             </div>
 
-            <!-- ****** INÍCIO DA CORREÇÃO (BUG 2) ****** -->
-            <!-- Comentário: (CORREÇÃO v3.0.1) Este bloco estava faltando. -->
-            <!-- Itens (ALIADO v3.0.1) -->
+            <!-- Comentário: (CORREÇÃO v3.0.1) Bloco de Itens do Aliado -->
             <div class="bg-gray-dark rounded-lg p-4 mt-4">
                 <h3 class="text-lg font-semibold text-gray-300 mb-2">Itens (Aliado)</h3>
-                <!-- Comentário: Dropzone única, mas estilizada como grid 3x2 -->
-                <div id="itens-selecionados-dropzone" class="rounded-lg min-h-[140px] grid grid-cols-3 gap-2">
-                    <!-- Comentário: Slots vazios são apenas visuais -->
+                <!-- Comentário: (CORREÇÃO v3.1.0 - BUG 2) Grid com 3 colunas para ícones de 80px -->
+                <div id="itens-selecionados-dropzone" class="rounded-lg min-h-[176px] grid grid-cols-3 gap-2 justify-items-center">
+                    <!-- Comentário: Slots vazios (80x80px) -->
                     <div class="item-slot-placeholder"></div>
                     <div class="item-slot-placeholder"></div>
                     <div class="item-slot-placeholder"></div>
@@ -144,13 +152,11 @@
                     <div class="item-slot-placeholder"></div>
                 </div>
             </div>
-            <!-- ****** FIM DA CORREÇÃO (BUG 2) ****** -->
 
             <!-- Card RPG de Status (ALIADO) -->
             <div id="card-rpg" class="mt-4">
                 <h3 class="text-lg font-semibold text-gray-300 mb-2">Status Totais (Aliado)</h3>
                 <div id="card-rpg-stats-aliado" class="bg-gray-dark rounded-lg p-4">
-                    <!-- Comentário: (Refatoração v3.0.0) ID alterado para aliado -->
                     <pre class="text-sm text-gray-200 whitespace-pre-wrap font-mono"><!-- Selecione um Campeão --></pre>
                 </div>
             </div>
@@ -182,10 +188,10 @@
             </div>
             
             <!-- Área da Biblioteca (Scroll) -->
-            <!-- Comentário: (Refatoração v3.0.0) grid-cols-6 como solicitado, altura flex-1 para scroll -->
-            <div id="biblioteca-lista" class="grid grid-cols-6 gap-2 overflow-y-auto flex-1 p-2 bg-gray-dark rounded-b-lg rounded-tr-lg content-start">
+            <!-- Comentário: (CORREÇÃO v3.1.0 - BUG 2) grid-cols-4 como solicitado -->
+            <div id="biblioteca-lista" class="grid grid-cols-4 gap-2 overflow-y-auto flex-1 p-2 bg-gray-dark rounded-b-lg rounded-tr-lg content-start justify-items-center">
                 <!-- Comentário: Placeholders são substituídos pelo app.js -->
-                <div class="w-16 h-16 bg-gray-light rounded-lg animate-pulse"></div>
+                <div class="w-20 h-20 bg-gray-light rounded-lg animate-pulse"></div>
             </div>
 
             <!-- Bloco de Receita (NOVO v3.0.0) -->
@@ -205,8 +211,8 @@
 
             <!-- Campeão Inimigo (NOVO v3.0.0) -->
             <div class="bg-gray-dark rounded-lg p-4 flex gap-4 items-center">
-                <!-- Comentário: (Otimização v3.0.0) Dropzone 64x64px -->
-                <div id="inimigo-selecionado-dropzone" class="w-16 h-16 bg-gray-darkest rounded-lg flex-shrink-0 flex items-center justify-center border-2 border-dashed border-gray-light text-gray-500 relative">
+                <!-- Comentário: (CORREÇÃO v3.1.0 - BUG 2) Dropzone 80x80px (w-20 h-20) -->
+                <div id="inimigo-selecionado-dropzone" class="w-20 h-20 bg-gray-darkest rounded-lg flex-shrink-0 flex items-center justify-center border-2 border-dashed border-gray-light text-gray-500 relative">
                     <span class="text-center text-xs p-1">Inimigo</span>
                 </div>
                 <!-- Nível Inimigo -->
@@ -220,9 +226,9 @@
             <!-- Itens (INIMIGO v3.0.0) -->
             <div class="bg-gray-dark rounded-lg p-4 mt-4">
                 <h3 class="text-lg font-semibold text-gray-300 mb-2">Itens (Inimigo)</h3>
-                <!-- Comentário: Dropzone única, mas estilizada como grid 3x2 -->
-                <div id="inimigo-itens-dropzone" class="rounded-lg min-h-[140px] grid grid-cols-3 gap-2">
-                    <!-- Comentário: Slots vazios são apenas visuais -->
+                <!-- Comentário: (CORREÇÃO v3.1.0 - BUG 2) Grid com 3 colunas para ícones de 80px -->
+                <div id="inimigo-itens-dropzone" class="rounded-lg min-h-[176px] grid grid-cols-3 gap-2 justify-items-center">
+                    <!-- Comentário: Slots vazios (80x80px) -->
                     <div class="item-slot-placeholder"></div>
                     <div class="item-slot-placeholder"></div>
                     <div class="item-slot-placeholder"></div>

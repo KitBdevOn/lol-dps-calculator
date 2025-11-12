@@ -1,5 +1,5 @@
 /**
- * app.js v3.0.1 (CORREÇÃO DE BUGS)
+ * app.js v3.1.0 (Otimização de Layout e Correção de Bugs)
  * Cérebro central da Calculadora de DPS.
  * Gerencia a busca de dados, a interface (D&D) e os cálculos.
  *
@@ -7,11 +7,11 @@
  * 1. Nossa Máxima: Desperdício de energia é fome e desespero.
  * 2. Tudo deve estar comentado: Para guia, debug e brainstorming.
  *
- * ATUALIZAÇÃO v3.0.1 (Correção Crítica):
- * - (BUG 1) Corrigido `handleFiltro` para usar `display: 'block'` (grid) em vez de `display: 'flex'`.
- * - (BUG 1) Removido `style.display = 'flex'` do `createBibliotecaElement`.
- * - (BUG 2) `index.html` corrigido para incluir `#itens-selecionados-dropzone` (Aliado).
- * - (BUG 3) Corrigido `handleItemDrop` para checar `> 6` em vez de `>= 6`.
+ * ATUALIZAÇÃO v3.1.0 (Correção e Otimização):
+ * - (BUG 1 - Imagem Some) CSS no index.html força o item 100% w/h na dropzone.
+ * - (BUG 2 - Layout Biblioteca) Biblioteca agora é 4 colunas.
+ * - (BUG 2 - Layout Ícones) Ícones aumentados para 80x80px (w-20 h-20)
+ * - (BUG 3 - Patch) Versão do Patch agora é exibida no header (puxado do DDragonData)
  */
 
 // --- Estado Global da Aplicação ---
@@ -50,8 +50,15 @@ document.addEventListener('DOMContentLoaded', init);
  */
 function init() {
     // Comentário (Debug): Confirma que o JS foi carregado e está executando.
-    console.log("Cérebro carregado. Iniciando protocolo de sobrevivência. Layout v3.0.1 (corrigido) ativo.");
+    console.log("Cérebro carregado. Iniciando protocolo de sobrevivência. Layout v3.1.0 (Otimizado) ativo.");
     
+    // --- (CORREÇÃO v3.1.0 - BUG 3) Exibe a Versão do Patch ---
+    const patchVersionEl = document.getElementById('patch-version');
+    if (patchVersionEl) {
+        patchVersionEl.innerText = `Patch: ${DDragonData.version}`;
+    }
+    // --- FIM DA CORREÇÃO ---
+
     // --- LÓGICA DE IDIOMA (i18n) ---
     // Comentário: Adiciona listeners aos botões de bandeira.
     const langBR = document.getElementById('lang-br');
@@ -199,12 +206,11 @@ function clearDropZone(zoneId, isItemZone = false) {
  */
 function setupDragAndDrop() {
     // Comentário (Debug): Confirma que as zonas D&D estão sendo configuradas.
-    console.log("Configurando zonas D&D (v3.0.1)...");
+    console.log("Configurando zonas D&D (v3.1.0)...");
 
     // Comentário: Referências de UI
     const bibliotecaLista = document.getElementById('biblioteca-lista');
     const campeaoAliadoDropzone = document.getElementById('campeao-selecionado-dropzone');
-    // Comentário: (CORREÇÃO v3.0.1 - BUG 2) Adicionando referência da dropzone de itens do aliado
     const itensAliadoDropzone = document.getElementById('itens-selecionados-dropzone');
     const campeaoInimigoDropzone = document.getElementById('inimigo-selecionado-dropzone');
     const itensInimigoDropzone = document.getElementById('inimigo-itens-dropzone');
@@ -225,7 +231,7 @@ function setupDragAndDrop() {
     });
 
     // 3. Configuração da Zona de Itens ALIADO
-    // Comentário: (CORREÇÃO v3.0.1 - BUG 2) Verificando se a dropzone existe antes de aplicar
+    // Comentário: (CORREÇÃO v3.0.1 - BUG 2) Verificando se a dropzone existe
     if (itensAliadoDropzone) {
         new Sortable(itensAliadoDropzone, {
             group: { name: 'itens', put: ['biblioteca'] },
@@ -253,7 +259,7 @@ function setupDragAndDrop() {
     });
 
     // Comentário (Debug): Confirma a finalização da configuração do Sortable.js.
-    console.log("Sortable.js v3.0.1 inicializado.");
+    console.log("Sortable.js v3.1.0 inicializado.");
 }
 
 /**
@@ -321,7 +327,6 @@ function handleItemDragStart(dropzone) {
  */
 function handleItemDrop(evt, target) { // target é 'aliado' ou 'inimigo'
     const el = evt.item; // O clone que foi solto
-    // Comentário: (CORREÇÃO v3.0.1 - BUG 2) A dropzone do aliado agora é 'itens-selecionados-dropzone'
     const dropzone = (target === 'aliado') ? document.getElementById('itens-selecionados-dropzone') : document.getElementById('inimigo-itens-dropzone');
 
     // Comentário (Debug): Rejeita o drop se *não* for um item.
@@ -334,17 +339,17 @@ function handleItemDrop(evt, target) { // target é 'aliado' ou 'inimigo'
     // Comentário: Verifica o limite de 6 itens.
     const existingItems = dropzone.querySelectorAll('div[data-id]');
     
-    // ****** INÍCIO DA CORREÇÃO (BUG 3) ******
-    // Comentário: (CORREÇÃO v3.0.1) A lógica era '>= 6', o que rejeitava o 6º item.
-    // Comentário: A lógica correta é '> 6', que rejeita o 7º item.
-    if (existingItems.length > 6) { 
+    // Comentário: (CORREÇÃO v3.0.1 - BUG 3) Lógica corrigida para permitir 6 itens.
+    // 'existingItems.length' *ainda não* inclui o item que está sendo solto (el).
+    // Então, se o length for 6, o 'el' seria o 7º.
+    if (existingItems.length >= 6) { 
          console.warn(`Rejeitado: Limite de 6 itens atingido para ${target}.`);
          el.parentNode.removeChild(el); // Destrói o clone
          return;
     }
-    // ****** FIM DA CORREÇÃO (BUG 3) ******
 
     // Comentário: Atualiza o array de IDs de itens no estado global.
+    // Usamos 'dropzone.children' que *inclui* o 'el' que acabou de ser solto.
     const newItemList = Array.from(dropzone.children)
                              .map(child => child.dataset.id)
                              .filter(id => id); // Filtra IDs nulos
@@ -514,11 +519,8 @@ function populateBiblioteca(championData, itemData) {
  */
 function createBibliotecaElement(id, type, name, imageUrl) {
     const div = document.createElement('div');
-    // Comentário: (Otimização v3.0.0)
-    // - Removido 'overflow-hidden' para o tooltip funcionar
-    // - Adicionado 'group-hover:z-50' para o card pular para frente
-    // Comentário: (CORREÇÃO v3.0.1 - BUG 1) Removido `style.display = 'flex'`
-    div.className = 'w-16 h-16 bg-gray-dark rounded-lg cursor-move p-0 relative group shadow-lg border border-gray-light group-hover:z-50';
+    // Comentário: (CORREÇÃO v3.1.0 - BUG 2) Ícones aumentados para w-20 h-20 (80px)
+    div.className = 'w-20 h-20 bg-gray-dark rounded-lg cursor-move p-0 relative group shadow-lg border border-gray-light group-hover:z-50';
     div.dataset.id = id; // ID (ex: "Aatrox" ou "3031")
     div.dataset.type = type; // 'champion' or 'item' (Usado pelo filtro)
 
@@ -529,11 +531,10 @@ function createBibliotecaElement(id, type, name, imageUrl) {
     img.draggable = false; // Previne o "ghost image" padrão do HTML5
 
     // Comentário: (Otimização v3.0.0) Tooltip (Nome)
-    // - Adicionado 'z-10' para aparecer sobre a imagem
-    // - O 'truncate' é o problema, mas a UI nova o torna visível
     const nameOverlay = document.createElement('span');
     nameOverlay.innerText = name;
-    nameOverlay.className = "absolute bottom-0 left-0 w-full bg-black bg-opacity-70 text-white text-xs text-center p-1 truncate transition-opacity duration-200 opacity-0 group-hover:opacity-100 rounded-b-lg z-10";
+    // Comentário: (CORREÇÃO v3.1.0) O tooltip não é mais 'truncate' para nomes longos
+    nameOverlay.className = "absolute bottom-0 left-0 w-auto min-w-full bg-black bg-opacity-70 text-white text-xs text-center p-1 transition-opacity duration-200 opacity-0 group-hover:opacity-100 rounded-b-lg z-10";
 
     div.appendChild(img);
     div.appendChild(nameOverlay);
@@ -574,8 +575,9 @@ function showRecipe(id, type) {
         if (!subItem) return;
 
         // Comentário: Cria o elemento visual para o sub-item
+        // Comentário: (CORREÇÃO v3.1.0) Ícones da receita aumentados para 64px
         const div = document.createElement('div');
-        div.className = 'w-12 h-12 bg-gray-darkest rounded-lg relative group border border-gray-light';
+        div.className = 'w-16 h-16 bg-gray-darkest rounded-lg relative group border border-gray-light';
         div.title = `${subItem.name} (${subItem.gold.total}G)`; // Tooltip nativo
 
         const img = document.createElement('img');
@@ -784,12 +786,9 @@ function handleFiltro() {
     // Comentário: Pega todos os elementos arrastáveis na biblioteca.
     const itens = bibliotecaLista.querySelectorAll('div[data-id]'); 
     
-    // ****** INÍCIO DA CORREÇÃO (BUG 1) ******
-    // Comentário: (CORREÇÃO v3.0.1) A biblioteca é um 'grid', 
-    // então os filhos devem ser `display: block` (ou 'grid-item').
-    // 'flex' estava quebrando o layout. 'block' é o padrão do div.
+    // Comentário: (CORREÇÃO v3.0.1 - BUG 1) A biblioteca é um 'grid',
+    // então os filhos devem ser `display: block`.
     const displayType = 'block'; 
-    // ****** FIM DA CORREÇÃO (BUG 1) ******
 
     for (const item of itens) {
         // Comentário: O nome do item está no 'alt' da imagem.
