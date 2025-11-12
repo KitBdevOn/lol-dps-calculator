@@ -1,5 +1,5 @@
 /**
- * app.js v4.0.0 (Redesign "Glassmorphism")
+ * app.js v4.0.1 (Hotfix de Inicialização)
  * Cérebro central da Calculadora de DPS.
  * Gerencia a busca de dados, a interface (D&D) e os cálculos.
  *
@@ -7,11 +7,10 @@
  * 1. Nossa Máxima: Desperdício de energia é fome e desespero.
  * 2. Tudo deve estar comentado: Para guia, debug e brainstorming.
  *
- * ATUALIZAÇÃO v4.0.0 (Redesign):
- * - (CSS) `index.html` agora usa classes "glass-" para o layout.
- * - (JS) `switchTab()` atualizado para usar classes `.tab-button` e `.tab-button-active`.
- * - (JS) `createBibliotecaElement()` atualizado para usar classe `.biblioteca-item`.
- * - (JS) `showRecipe()` atualizado para usar classe `.biblioteca-item`.
+ * ATUALIZAÇÃO v4.0.1 (Hotfix):
+ * - (CORREÇÃO 1) Removido `DOMContentLoaded` listener que estava falhando.
+ * - (CORREÇÃO 2) Adicionado chamada direta `init();` no final do script.
+ * - (CORREÇÃO 3) Corrigido typo fatal em `showRecipe()` (`DDragonData.subItemId]` -> `DDragonData.itemData[subItemId]`).
  */
 
 // --- Estado Global da Aplicação ---
@@ -41,8 +40,8 @@ let currentState = {
 };
 // ----------------------------------
 
-// Ponto de entrada: Espera o HTML estar pronto.
-document.addEventListener('DOMContentLoaded', init);
+// Comentário: (CORREÇÃO v4.0.1) Removido 'DOMContentLoaded' daqui.
+// A função init() será chamada no final do arquivo.
 
 /**
  * Função de Inicialização
@@ -50,7 +49,7 @@ document.addEventListener('DOMContentLoaded', init);
  */
 function init() {
     // Comentário (Debug): Confirma que o JS foi carregado e está executando.
-    console.log("Cérebro carregado. Iniciando protocolo de sobrevivência. Layout v4.0.0 (Glassmorphism) ativo.");
+    console.log("Cérebro carregado. Iniciando protocolo de sobrevivência. Layout v4.0.1 (Hotfix) ativo.");
     
     // --- (v3.1.0) Exibe a Versão do Patch ---
     const patchVersionEl = document.getElementById('patch-version');
@@ -207,7 +206,7 @@ function clearDropZone(zoneId, isItemZone = false) {
  */
 function setupDragAndDrop() {
     // Comentário (Debug): Confirma que as zonas D&D estão sendo configuradas.
-    console.log("Configurando zonas D&D (v4.0.0)...");
+    console.log("Configurando zonas D&D (v4.0.1)...");
 
     // Comentário: Referências de UI
     const bibliotecaLista = document.getElementById('biblioteca-lista');
@@ -260,7 +259,7 @@ function setupDragAndDrop() {
     });
 
     // Comentário (Debug): Confirma a finalização da configuração do Sortable.js.
-    console.log("Sortable.js v4.0.0 inicializado.");
+    console.log("Sortable.js v4.0.1 inicializado.");
 }
 
 /**
@@ -545,7 +544,7 @@ function createBibliotecaElement(id, type, name, imageUrl) {
 
 /**
  * (NOVO v3.0.0) Mostra a receita de um item clicado
- * (ATUALIZADO v4.0.0)
+ * (ATUALIZADO v4.0.1 - HOTFIX)
  */
 function showRecipe(id, type) {
     const receitaBloco = document.getElementById('receita-bloco');
@@ -570,7 +569,9 @@ function showRecipe(id, type) {
     
     // Comentário: Itera sobre os IDs dos sub-itens
     item.from.forEach(subItemId => {
-        const subItem = DDragonData.subItemId];
+        // Comentário: (CORREÇÃO v4.0.1) Corrigido typo fatal.
+        // Era: DDragonData.subItemId]
+        const subItem = DDragonData.itemData[subItemId]; 
         if (!subItem) return;
 
         // Comentário: (v4.0.0) Reutiliza a classe .biblioteca-item (64x64)
@@ -807,3 +808,9 @@ function handleFiltro() {
         }
     }
 }
+
+// --- (CORREÇÃO v4.0.1) ---
+// Comentário: Chama a função init() diretamente, pois o script está no
+// final do <body>, garantindo que o DOM está carregado.
+// Isso corrige a falha onde 'DOMContentLoaded' não era disparado.
+init();
