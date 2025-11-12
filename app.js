@@ -1,5 +1,5 @@
 /**
- * app.js v5.0.11 (Refatoração de Performance - Hotfix D&D Final/Simplificado)
+ * app.js v6.0.0 (Refatoração de D&D - Nativo)
  * Cérebro central da Calculadora de DPS.
  *
  * PROTOCOLO DE PERFORMANCE (v5.0.4):
@@ -7,16 +7,12 @@
  * 2. Tudo deve estar comentado: Para guia, debug e brainstorming.
  * 3. Repetir 1 e 2.
  *
- * ATUALIZAÇÃO v5.0.11 (Hotfix D&D Simplificado):
- * - (FOME E DESESPERO) O v5.0.10 estava 100% quebrado. O clique falhava e o D&D travava.
- * - (CAUSA RAIZ) A lógica "el.replaceWith(clone)" (v5.0.10) estava
- * destruindo o 'el' que o Sortable.js estava rastreando, causando um erro fatal.
- * - (SOLUÇÃO v5.0.11) A lógica foi revertida para a "versão antiga" (alta performance):
- * 1. Nós MANTEMOS 'el' (o clone temporário).
- * 2. Nós NÃO clonamos 'el'.
- * 3. Nós removemos o 'existingChamp' (se houver).
- * 4. Nós adicionamos o listener de clique DIRETAMENTE em 'el'.
- * Isso elimina 100% do conflito (desespero).
+ * ATUALIZAÇÃO v6.0.0 (D&D Nativo):
+ * - (FOME E DESESPERO) A biblioteca Sortable.js (v5.x) era a causa raiz
+ * de 100% dos nossos bugs de D&D (desperdício de energia).
+ * - (SOLUÇÃO - IDEIA DO USUÁRIO) Removemos o Sortable.js (economia de energia).
+ * - (SOLUÇÃO) Implementamos a API Nativa de D&D do HTML5 ("o slot lê o código
+ * e retorna a imagem"). Isso elimina 100% dos bugs de "clone".
  */
 
 // --- Estado Global da Aplicação ---
@@ -59,7 +55,7 @@ function debounce(func, delay) {
  * Função de Inicialização
  */
 function init() {
-    console.log("Cérebro carregado. Iniciando protocolo de sobrevivência. Layout v5.0.11 (Hotfix D&D Simplificado) ativo.");
+    console.log("Cérebro carregado. Iniciando protocolo de sobrevivência. Layout v6.0.0 (D&D Nativo) ativo.");
     
     const patchVersionEl = document.getElementById('patch-version');
     if (patchVersionEl) {
@@ -86,7 +82,7 @@ function init() {
         tabItens.addEventListener('click', () => switchTab('item'));
     }
 
-    setupDragAndDrop();
+    // Comentário: (v6.0.0) setupDragAndDrop() foi removido.
     setupInputListeners(); 
     fetchData();
 }
@@ -137,11 +133,13 @@ function switchLanguage(lang) {
         filtroInput.value = '';
     }
     
+    // Reseta o estado
     currentState.championId = null;
     currentState.itemIds = [null, null, null, null, null, null];
     currentState.enemyChampionId = null;
     currentState.enemyItemIds = [null, null, null, null, null, null];
     
+    // Limpa visualmente
     clearDropZone('campeao-selecionado-dropzone');
     clearDropZone('inimigo-selecionado-dropzone');
     for (let i = 0; i < 6; i++) {
@@ -157,16 +155,20 @@ function switchLanguage(lang) {
 
 /**
  * Helper para limpar visualmente uma dropzone de CAMPEÃO
+ * (Modificado v6.0.0)
  */
 function clearDropZone(zoneId) {
     const dropzone = document.getElementById(zoneId);
     if (!dropzone) return;
 
-    const existingElement = dropzone.querySelector('div[data-id]');
-    if (existingElement) existingElement.remove();
+    // Limpa o conteúdo (o ícone)
+    dropzone.innerHTML = ''; 
 
-    const placeholderText = dropzone.querySelector('span');
-    if (placeholderText) placeholderText.style.display = 'flex';
+    // Adiciona o placeholder de volta
+    const placeholderText = document.createElement('span');
+    placeholderText.className = 'text-center text-xs p-1 text-gold-dark';
+    placeholderText.innerText = (zoneId === 'campeao-selecionado-dropzone') ? 'Aliado' : 'Inimigo';
+    dropzone.appendChild(placeholderText);
 
     const target = (zoneId === 'campeao-selecionado-dropzone') ? 'aliado' : 'inimigo';
     const nameEl = (target === 'aliado') ? document.getElementById('aliado-champion-name') : document.getElementById('inimigo-champion-name');
@@ -175,211 +177,159 @@ function clearDropZone(zoneId) {
 
 /**
  * Helper para limpar visualmente um SLOT de ITEM
+ * (Modificado v6.0.0)
  */
 function clearItemSlot(target, slotIndex) {
     const slotId = `${target}-item-slot-${slotIndex}`;
     const slot = document.getElementById(slotId);
     if (!slot) return;
     
-    const itemElement = slot.querySelector('div[data-id]');
-    if (itemElement) itemElement.remove();
+    // Limpa o conteúdo (o ícone)
+    slot.innerHTML = '';
     
-    const placeholderText = slot.querySelector('span');
-    if (placeholderText) placeholderText.style.display = 'block';
+    // Adiciona o placeholder de volta
+    const placeholderText = document.createElement('span');
+    placeholderText.className = 'item-slot-placeholder text-xs';
+    placeholderText.innerText = `Slot ${slotIndex + 1}`;
+    slot.appendChild(placeholderText);
 }
 
 
+// --- (INÍCIO DA LÓGICA D&D NATIVO v6.0.0) ---
+
 /**
- * Configura as 14 zonas de Drag-and-Drop
+ * (v6.0.0) Permite que um item seja solto
  */
-function setupDragAndDrop() {
-    console.log("Configurando zonas D&D (v5.0.11 - Otimizado)...");
-
-    const bibliotecaLista = document.getElementById('biblioteca-lista');
-    
-    new Sortable(bibliotecaLista, {
-        group: { name: 'biblioteca', pull: 'clone', put: false },
-        animation: 150,
-        sort: false,
-    });
-
-    // Zonas de Campeão
-    const campeaoAliadoDropzone = document.getElementById('campeao-selecionado-dropzone');
-    new Sortable(campeaoAliadoDropzone, {
-        group: { name: 'campeoes', put: ['biblioteca'] },
-        animation: 150,
-        onAdd: (evt) => handleChampionDrop(evt, 'aliado')
-    });
-
-    const campeaoInimigoDropzone = document.getElementById('inimigo-selecionado-dropzone');
-    new Sortable(campeaoInimigoDropzone, {
-        group: { name: 'campeoes', put: ['biblioteca'] },
-        animation: 150,
-        onAdd: (evt) => handleChampionDrop(evt, 'inimigo')
-    });
-
-    // 12 Zonas de Item
-    for (let i = 0; i < 6; i++) {
-        const aliadoSlot = document.getElementById(`aliado-item-slot-${i}`);
-        if (aliadoSlot) {
-            new Sortable(aliadoSlot, {
-                group: { name: 'itens', put: ['biblioteca'] },
-                animation: 150,
-                onAdd: (evt) => handleItemDrop(evt, 'aliado', i)
-            });
-        }
-        
-        const inimigoSlot = document.getElementById(`inimigo-item-slot-${i}`);
-        if (inimigoSlot) {
-            new Sortable(inimigoSlot, {
-                group: { name: 'itens', put: ['biblioteca'] },
-                animation: 150,
-                onAdd: (evt) => handleItemDrop(evt, 'inimigo', i)
-            });
-        }
-    }
-
-    console.log("Sortable.js v5.0.11 (Nativo/Correto) inicializado.");
+function allowDrop(evt) {
+    evt.preventDefault();
 }
 
 /**
- * (Refatorado v5.0.11 - DESESPERO HOTFIX FINAL) Manipula o drop de um CAMPEÃO
+ * (v6.0.0) Adiciona/Remove classe de feedback visual
  */
-function handleChampionDrop(evt, target) {
-    const el = evt.item; // O clone *temporário* do Sortable.js
-    const dropzone = (target === 'aliado') ? document.getElementById('campeao-selecionado-dropzone') : document.getElementById('inimigo-selecionado-dropzone');
-    const nameEl = (target === 'aliado') ? document.getElementById('aliado-champion-name') : document.getElementById('inimigo-champion-name');
+function handleDragEnter(evt) {
+    evt.target.classList.add('drag-over');
+}
+function handleDragLeave(evt) {
+    evt.target.classList.remove('drag-over');
+}
 
-    if (el.dataset.type !== 'champion') {
-        console.warn(`Rejeitado: Apenas campeões são permitidos na zona do ${target}.`);
-        el.parentNode.removeChild(el); 
+/**
+ * (v6.0.0) Define o "código" (ID e Tipo) quando o arraste começa
+ */
+function handleDragStart(evt) {
+    // Comentário: Define o ID (ex: "Aatrox") e o TIPO (ex: "champion")
+    evt.dataTransfer.setData("text/plain", evt.target.dataset.id);
+    evt.dataTransfer.setData("text/type", evt.target.dataset.type);
+    evt.target.classList.add('dragging');
+}
+
+/**
+ * (v6.0.0) Limpa o feedback visual quando o arraste termina
+ */
+function handleDragEnd(evt) {
+    evt.target.classList.remove('dragging');
+}
+
+/**
+ * (v6.0.0) O "Coração" do D&D. O slot "lê o código" e "retorna a imagem".
+ */
+function handleDrop(evt, target, expectedType, slotIndex) {
+    evt.preventDefault();
+    evt.target.classList.remove('drag-over');
+
+    // 1. "Lê o código" (ID e Tipo)
+    const id = evt.dataTransfer.getData("text/plain");
+    const type = evt.dataTransfer.getData("text/type");
+
+    // 2. Validação
+    if (type !== expectedType) {
+        console.warn(`Rejeitado: Tipo errado. Esperado ${expectedType}, recebido ${type}.`);
         return;
     }
 
-    // --- (INÍCIO DA CORREÇÃO v5.0.11 - DESESPERO) ---
-    // Comentário: O bug v5.0.10 foi tentar clonar e substituir 'el'.
-    // A Causa Raiz foi que isso quebrou o rastreamento do Sortable.js.
-    // A Solução (v5.0.11) é Manter 'el' e adicionar nosso listener a ele.
-    
-    // 1. Removemos o campeão antigo (se houver).
-    const existingChamp = dropzone.querySelector('div[data-id]');
-    if (existingChamp) {
-        existingChamp.remove();
-    }
-    
-    // 2. O 'el' (o clone temporário) JÁ ESTÁ na dropzone.
-    // Nós o deixamos lá.
-    // --- (FIM DA CORREÇÃO) ---
-    
-    const placeholder = dropzone.querySelector('span');
-    if (placeholder) placeholder.style.display = 'none';
-
-    // Atualiza o estado
-    const champId = el.dataset.id;
-    if (target === 'aliado') {
-        currentState.championId = champId;
-        console.log(`Campeão Aliado: ${champId}`);
+    // 3. Define a dropzone
+    let dropzone;
+    if (expectedType === 'champion') {
+        dropzone = (target === 'aliado') ? document.getElementById('campeao-selecionado-dropzone') : document.getElementById('inimigo-selecionado-dropzone');
     } else {
-        currentState.enemyChampionId = champId;
-        console.log(`Campeão Inimigo: ${champId}`);
+        dropzone = document.getElementById(`${target}-item-slot-${slotIndex}`);
     }
+    if (!dropzone) return;
     
-    // Atualiza o nome
-    if (nameEl && DDragonData.championData && DDragonData.championData[champId]) {
-        nameEl.innerText = DDragonData.championData[champId].name;
-    }
+    // 4. "Retorna a imagem" (Renderiza)
+    const imageUrl = (type === 'champion') 
+        ? `${DDragonData.baseUrl}/img/champion/${DDragonData.championData[id].image.full}`
+        : `${DDragonData.baseUrl}/img/item/${DDragonData.itemData[id].image.full}`;
+    const name = (type === 'champion')
+        ? DDragonData.championData[id].name
+        : DDragonData.itemData[id].name;
+
+    // Limpa o placeholder
+    dropzone.innerHTML = ''; 
     
-    // Comentário: Adiciona o listener de clique ao *el* (o item que mantivemos).
-    // (Isto agora é executado, pois não há erro fatal.)
-    el.addEventListener('click', () => {
-        el.remove(); // Remove o 'el'
-        if (placeholder) placeholder.style.display = 'flex'; 
-        
+    const img = document.createElement('img');
+    img.src = imageUrl;
+    img.alt = name;
+    img.className = "w-full h-full object-cover rounded-lg";
+    img.draggable = false; // Impede que o item solto seja arrastado novamente
+    
+    // Adiciona o listener de clique para remover
+    img.addEventListener('click', () => handleRemove(target, expectedType, slotIndex));
+    
+    dropzone.appendChild(img);
+
+    // 5. Atualiza o Estado
+    if (type === 'champion') {
         if (target === 'aliado') {
-            currentState.championId = null;
-            if (nameEl) nameEl.innerText = ''; 
+            currentState.championId = id;
+            document.getElementById('aliado-champion-name').innerText = name;
+            updateAllyStats();
         } else {
-            currentState.enemyChampionId = null;
-            if (nameEl) nameEl.innerText = ''; 
-        }
-        
-        if (target === 'aliado') {
-            updateAllyStats(); 
-        } else {
+            currentState.enemyChampionId = id;
+            document.getElementById('inimigo-champion-name').innerText = name;
             updateEnemyStats();
         }
-    });
-
-    if (target === 'aliado') {
-        updateAllyStats(); 
     } else {
-        updateEnemyStats();
+        if (target === 'aliado') {
+            currentState.itemIds[slotIndex] = id;
+            updateAllyStats();
+        } else {
+            currentState.enemyItemIds[slotIndex] = id;
+            updateEnemyStats();
+        }
     }
+    console.log(`Item ${id} solto em ${target} slot ${slotIndex}`);
 }
-
 
 /**
- * (Refatorado v5.0.11 - DESESPERO HOTFIX FINAL) Manipula o drop de um ITEM
+ * (v6.0.0) Manipula a remoção (clique) de um item ou campeão
  */
-function handleItemDrop(evt, target, slotIndex) {
-    const el = evt.item; // O clone *temporário*
-    const slot = document.getElementById(`${target}-item-slot-${slotIndex}`);
-    if (!slot) return;
-
-    if (el.dataset.type !== 'item') {
-        console.warn(`Rejeitado: Apenas itens são permitidos na zona do ${target}.`);
-         el.parentNode.removeChild(el);
-         return;
-    }
-
-    // --- (INÍCIO DA CORREÇÃO v5.0.11 - DESESPERO) ---
-    // 1. Removemos o item antigo (se houver).
-    const existingItem = slot.querySelector('div[data-id]');
-    if (existingItem) {
-        existingItem.remove(); 
-    }
-    
-    // 2. O 'el' (o clone temporário) JÁ ESTÁ na dropzone.
-    // Nós o deixamos lá.
-    // --- (FIM DA CORREÇÃO) ---
-    
-    const placeholder = slot.querySelector('span');
-    if (placeholder) placeholder.style.display = 'none';
-
-    // Atualiza o estado
-    const itemId = el.dataset.id;
-    if (target === 'aliado') {
-        currentState.itemIds[slotIndex] = itemId;
-        console.log(`Itens Aliado: [${currentState.itemIds.join(', ')}]`);
-    } else {
-        currentState.enemyItemIds[slotIndex] = itemId; 
-        console.log(`Itens Inimigo: [${currentState.enemyItemIds.join(', ')}]`);
-    }
-
-    // Adiciona o listener ao *el* (o item que mantivemos)
-    el.addEventListener('click', () => {
-        el.remove();
-        if (placeholder) placeholder.style.display = 'block'; 
-        
+function handleRemove(target, type, slotIndex) {
+    if (type === 'champion') {
         if (target === 'aliado') {
-            currentState.itemIds[slotIndex] = null;
+            currentState.championId = null;
+            clearDropZone('campeao-selecionado-dropzone');
+            updateAllyStats();
         } else {
-            currentState.enemyItemIds[slotIndex] = null;
-        }
-        
-        if (target === 'aliado') {
-            updateAllyStats(); 
-        } else {
+            currentState.enemyChampionId = null;
+            clearDropZone('inimigo-selecionado-dropzone');
             updateEnemyStats();
         }
-    });
-
-    if (target === 'aliado') {
-        updateAllyStats(); 
     } else {
-        updateEnemyStats();
+        if (target === 'aliado') {
+            currentState.itemIds[slotIndex] = null;
+            clearItemSlot('aliado', slotIndex);
+            updateAllyStats();
+        } else {
+            currentState.enemyItemIds[slotIndex] = null;
+            clearItemSlot('inimigo', slotIndex);
+            updateEnemyStats();
+        }
     }
 }
+
+// --- (FIM DA LÓGICA D&D NATIVO v6.0.0) ---
 
 
 /**
@@ -486,18 +436,24 @@ function populateBiblioteca(championData, itemData) {
 
 /**
  * Helper para criar um elemento arrastável para a biblioteca
+ * (Modificado v6.0.0)
  */
 function createBibliotecaElement(id, type, name, imageUrl) {
     const div = document.createElement('div');
     div.className = 'biblioteca-item w-20 h-20 rounded-lg cursor-move p-0 relative group group-hover:z-50';
     div.dataset.id = id;
     div.dataset.type = type;
+    
+    // (D&D Nativo v6.0.0)
+    div.draggable = true;
+    div.addEventListener('dragstart', handleDragStart);
+    div.addEventListener('dragend', handleDragEnd);
 
     const img = document.createElement('img');
     img.src = imageUrl;
     img.alt = name;
     img.className = "w-full h-full object-cover transition-transform duration-200 group-hover:scale-110 rounded-lg";
-    img.draggable = false;
+    img.draggable = false; // Impede que a *imagem* seja arrastada (queremos arrastar o *div*)
 
     const nameOverlay = document.createElement('span');
     nameOverlay.innerText = name;
