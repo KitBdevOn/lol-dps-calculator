@@ -1,5 +1,5 @@
 /**
- * app.js
+ * app.js v3.0.0
  * Cérebro central da Calculadora de DPS.
  * Gerencia a busca de dados, a interface (D&D) e os cálculos.
  *
@@ -7,13 +7,15 @@
  * 1. Nossa Máxima: Desperdício de energia é fome e desespero.
  * 2. Tudo deve estar comentado: Para guia, debug e brainstorming.
  *
- * ATUALIZAÇÃO v2.2.0 (Aplicada sobre v2.1.1):
- * - Implementado switch de idioma (i18n) (pt_BR / en_US)
- * - Header modificado no HTML
- * - Estado global atualizado com 'lang'
- * - `init()` atualizada com listeners de idioma
- * - `fetchData()` atualizada para usar 'lang'
- * - Nova função `switchLanguage()` adicionada
+ * ATUALIZAÇÃO v3.0.0 (Refatoração Completa):
+ * - Implementado sistema Aliado vs. Inimigo.
+ * - `currentState` agora rastreia o estado do inimigo (campeão, nível, itens).
+ * - `calculateTotalStats` refatorado para `calculateStats(championId, level, itemIds)`.
+ * - `calculateDPS` agora usa os status calculados do inimigo (armadura/rm).
+ * - Adicionada função `showRecipe(itemId)` para mostrar a árvore de construção.
+ * - Adicionadas dropzones de Inimigo em `setupDragAndDrop`.
+ * - `setupInputListeners` atualizado para o novo layout (sem targetArmor/Mr).
+ * - Otimização de Tooltip (removido overflow-hidden) em `createBibliotecaElement`.
  */
 
 // --- Estado Global da Aplicação ---
@@ -26,15 +28,20 @@ let DDragonData = {
 };
 DDragonData.baseUrl = `https://ddragon.leagueoflegends.com/cdn/${DDragonData.version}`;
 
-// Comentário: currentState rastreia as seleções do usuário em tempo real.
+// Comentário: (v3.0.0) currentState refatorado para Aliado vs Inimigo.
 let currentState = {
     lang: 'pt_BR', // Comentário: (i18n) O idioma padrão (pt_BR ou en_US)
+    activeTab: 'champion', // Comentário: (Tarefa 2) Estado inicial da aba
+
+    // Estado do Aliado
     championId: null,
     level: 1,
     itemIds: [],
-    targetArmor: 100,
-    targetMr: 100,
-    activeTab: 'champion' // Comentário: (Tarefa 2) Estado inicial da aba
+
+    // Estado do Inimigo (NOVO v3.0.0)
+    enemyChampionId: null,
+    enemyLevel: 1,
+    enemyItemIds: []
 };
 // ----------------------------------
 
@@ -47,7 +54,7 @@ document.addEventListener('DOMContentLoaded', init);
  */
 function init() {
     // Comentário (Debug): Confirma que o JS foi carregado e está executando.
-    console.log("Cérebro carregado. Iniciando protocolo de sobrevivência. Layout 'Streaming' ativo.");
+    console.log("Cérebro carregado. Iniciando protocolo de sobrevivência. Layout v3.0.0 ativo.");
     
     // --- LÓGICA DE IDIOMA (i18n) ---
     // Comentário: Adiciona listeners aos botões de bandeira.
@@ -75,10 +82,10 @@ function init() {
     }
     // --- FIM DA LÓGICA DE FILTRAGEM ---
 
-    // Comentário: Configura as 3 zonas de Drag-and-Drop (Biblioteca, Campeão, Itens).
+    // Comentário: Configura as zonas de Drag-and-Drop (Biblioteca, Aliado, Inimigo).
     setupDragAndDrop();
 
-    // Comentário: Configura os listeners dos inputs (Nível, Armadura, RM).
+    // Comentário: Configura os listeners dos inputs (Nível Aliado, Nível Inimigo).
     setupInputListeners();
 
     // Comentário: Inicia a busca de dados (campeões e itens) do Data Dragon.
@@ -147,33 +154,47 @@ function switchLanguage(lang) {
         filtroInput.value = '';
     }
     
-    // Comentário: (Debug) Limpa o estado atual para forçar a recarga visual
-    // (O usuário pode ter um campeão selecionado que terá o nome trocado)
+    // Comentário: (Debug v3.0.0) Limpa o estado COMPLETO (aliado e inimigo).
     currentState.championId = null;
     currentState.itemIds = [];
+    currentState.enemyChampionId = null;
+    currentState.enemyItemIds = [];
     
     // Comentário: Limpa visualmente as zonas de drop
-    const campeaoDropzone = document.getElementById('campeao-selecionado-dropzone');
-    const itensDropzone = document.getElementById('itens-selecionados-dropzone');
-    const champPlaceholder = campeaoDropzone.querySelector('span');
+    clearDropZone('campeao-selecionado-dropzone');
+    clearDropZone('itens-selecionados-dropzone', true);
+    clearDropZone('inimigo-selecionado-dropzone');
+    clearDropZone('inimigo-itens-dropzone', true);
     
-    // Limpa campeão
-    const existingChamp = campeaoDropzone.querySelector('div[data-id]');
-    if (existingChamp) existingChamp.remove();
-    if (champPlaceholder) champPlaceholder.style.display = 'block';
-
-    // Limpa itens
-    const existingItems = itensDropzone.querySelectorAll('div[data-id]');
-    existingItems.forEach(item => item.remove());
-    const itemPlaceholders = itensDropzone.querySelectorAll('.item-slot-placeholder');
-    itemPlaceholders.forEach(p => p.style.display = 'block');
-
     // Comentário: Zera os cálculos antes de buscar novos dados
-    calculateTotalStats();
+    triggerCalculations();
 
     // Comentário: Recarrega todos os dados do Data Dragon no novo idioma.
     // A função fetchData() já chama a populateBiblioteca().
     fetchData();
+}
+
+/**
+ * (NOVO v3.0.0) Helper para limpar visualmente uma dropzone
+ */
+function clearDropZone(zoneId, isItemZone = false) {
+    // Comentário: Limpa uma zona de drop ao trocar de idioma ou remover item.
+    const dropzone = document.getElementById(zoneId);
+    if (!dropzone) return;
+
+    // Remove o campeão/item (elemento com data-id)
+    const existingElement = dropzone.querySelector('div[data-id]');
+    if (existingElement) existingElement.remove();
+
+    if (isItemZone) {
+        // Comentário: (Refatoração v3.0.0) Mostra os placeholders de item
+        const placeholders = dropzone.querySelectorAll('.item-slot-placeholder');
+        placeholders.forEach(p => p.style.display = 'block');
+    } else {
+        // Comentário: Mostra o placeholder de campeão
+        const placeholderText = dropzone.querySelector('span');
+        if (placeholderText) placeholderText.style.display = 'block';
+    }
 }
 
 
@@ -182,11 +203,14 @@ function switchLanguage(lang) {
  */
 function setupDragAndDrop() {
     // Comentário (Debug): Confirma que as zonas D&D estão sendo configuradas.
-    console.log("Configurando zonas D&D...");
+    console.log("Configurando zonas D&D (v3.0.0)...");
 
+    // Comentário: Referências de UI
     const bibliotecaLista = document.getElementById('biblioteca-lista');
-    const campeaoDropzone = document.getElementById('campeao-selecionado-dropzone');
-    const itensDropzone = document.getElementById('itens-selecionados-dropzone');
+    const campeaoAliadoDropzone = document.getElementById('campeao-selecionado-dropzone');
+    const itensAliadoDropzone = document.getElementById('itens-selecionados-dropzone');
+    const campeaoInimigoDropzone = document.getElementById('inimigo-selecionado-dropzone');
+    const itensInimigoDropzone = document.getElementById('inimigo-itens-dropzone');
 
     // 1. Configuração da Biblioteca (de onde se "puxa")
     // Comentário: 'pull: clone' significa que o item original permanece na biblioteca.
@@ -196,139 +220,186 @@ function setupDragAndDrop() {
         sort: false // Não permite reordenar a biblioteca
     });
 
-    // 2. Configuração da Zona do Campeão (onde se "solta")
-    new Sortable(campeaoDropzone, {
+    // 2. Configuração da Zona do Campeão ALIADO
+    new Sortable(campeaoAliadoDropzone, {
         group: { name: 'campeoes', put: ['biblioteca'] }, // Aceita itens do grupo 'biblioteca'
         animation: 150,
-        onAdd: function (evt) {
-            // Comentário: 'evt.item' é o *clone* que foi solto na zona.
-            const el = evt.item;
-            
-            // --- INÍCIO DA CORREÇÃO (Bug D&D - Placeholder) ---
-            // Comentário: Procura por um campeão (div com data-id) que *já* esteja na zona.
-            const existingChamp = campeaoDropzone.querySelector('div[data-id]');
-
-            // Comentário (Debug): Rejeita o drop se não for um campeão OU se já houver um campeão.
-            if (el.dataset.type !== 'champion' || (existingChamp && existingChamp !== el)) {
-                console.warn("Rejeitado: Apenas um campeão é permitido.");
-                el.parentNode.removeChild(el); // Destrói o clone
-                return;
-            }
-            // --- FIM DA CORREÇÃO ---
-            
-            // Comentário: Esconde o texto "Solte o Campeão Aqui".
-            const placeholder = campeaoDropzone.querySelector('span');
-            if (placeholder) placeholder.style.display = 'none';
-
-            // Comentário: Atualiza o estado global com o ID do campeão selecionado.
-            currentState.championId = el.dataset.id;
-            console.log(`Campeão selecionado: ${currentState.championId}`);
-            
-            // Comentário: Adiciona um listener de clique no clone para removê-lo.
-            el.addEventListener('click', () => {
-                el.remove();
-                if (placeholder) placeholder.style.display = 'block'; // Mostra o placeholder novamente
-                currentState.championId = null; // Limpa o estado
-                calculateTotalStats(); // Recalcula (para zerar os stats)
-            });
-
-            calculateTotalStats(); // Dispara o cálculo inicial
-        }
+        onAdd: (evt) => handleChampionDrop(evt, 'aliado') // Comentário: (Refatoração v3.0.0)
     });
 
-    // 3. Configuração da Zona de Itens (onde se "solta")
-    // Comentário: (Tarefa 1) A dropzone agora é um grid, mas a lógica do Sortable é a mesma.
-    new Sortable(itensDropzone, {
-        group: { name: 'itens', put: ['biblioteca'] }, // Aceita itens do grupo 'biblioteca'
+    // 3. Configuração da Zona de Itens ALIADO
+    new Sortable(itensAliadoDropzone, {
+        group: { name: 'itens', put: ['biblioteca'] },
         animation: 150,
-        // Comentário: Removemos os placeholders visuais ao soltar o primeiro item.
-        onStart: function(evt) {
-            const placeholders = itensDropzone.querySelectorAll('.item-slot-placeholder');
-            placeholders.forEach(p => p.style.display = 'none');
-        },
-        onAdd: function (evt) {
-            const el = evt.item;
-            
-            // --- INÍCIO DA CORREÇÃO (Bug D&D - Tipo) ---
-            // Comentário (Debug): Rejeita o drop se *não* for um item (ex: um campeão).
-            if (el.dataset.type !== 'item') {
-                console.warn("Rejeitado: Apenas itens são permitidos aqui.");
-                 el.parentNode.removeChild(el); // Destrói o clone
-                 return;
-            }
-            // --- FIM DA CORREÇÃO ---
-
-            // Comentário: Verifica o limite de 6 itens.
-            const existingItems = itensDropzone.querySelectorAll('div[data-id]');
-            if (existingItems.length >= 6) {
-                 console.warn("Rejeitado: Limite de 6 itens atingido.");
-                 el.parentNode.removeChild(el); // Destrói o clone
-                 return;
-            }
-
-            // Comentário: Atualiza o array de IDs de itens no estado global.
-            currentState.itemIds = Array.from(itensDropzone.children)
-                                       .map(child => child.dataset.id)
-                                       .filter(id => id); // Filtra IDs nulos (placeholders)
-            
-            console.log(`Itens: [${currentState.itemIds.join(', ')}]`);
-
-            // Comentário: Adiciona listener de clique para remover o item.
-            el.addEventListener('click', () => {
-                el.remove();
-                // Comentário: Atualiza o estado global após a remoção.
-                currentState.itemIds = Array.from(itensDropzone.children)
-                                           .map(child => child.dataset.id)
-                                           .filter(id => id);
-                
-                // Comentário: (Tarefa 1) Se todos os itens foram removidos, mostra os placeholders.
-                if (currentState.itemIds.length === 0) {
-                     const placeholders = itensDropzone.querySelectorAll('.item-slot-placeholder');
-                     placeholders.forEach(p => p.style.display = 'block');
-                }
-                
-                calculateTotalStats(); // Recalcula
-            });
-
-            calculateTotalStats(); // Dispara o cálculo
-        }
+        onStart: (evt) => handleItemDragStart(itensAliadoDropzone), // Comentário: (Refatoração v3.0.0)
+        onAdd: (evt) => handleItemDrop(evt, 'aliado') // Comentário: (Refatoração v3.0.0)
     });
+
+    // 4. Configuração da Zona do Campeão INIMIGO (NOVO v3.0.0)
+    new Sortable(campeaoInimigoDropzone, {
+        group: { name: 'campeoes', put: ['biblioteca'] },
+        animation: 150,
+        onAdd: (evt) => handleChampionDrop(evt, 'inimigo') // Comentário: (Refatoração v3.0.0)
+    });
+
+    // 5. Configuração da Zona de Itens INIMIGO (NOVO v3.0.0)
+    new Sortable(itensInimigoDropzone, {
+        group: { name: 'itens', put: ['biblioteca'] },
+        animation: 150,
+        onStart: (evt) => handleItemDragStart(itensInimigoDropzone), // Comentário: (Refatoração v3.0.0)
+        onAdd: (evt) => handleItemDrop(evt, 'inimigo') // Comentário: (Refatoração v3.0.0)
+    });
+
     // Comentário (Debug): Confirma a finalização da configuração do Sortable.js.
-    console.log("Sortable.js inicializado.");
+    console.log("Sortable.js v3.0.0 inicializado.");
 }
 
 /**
- * Configura os listeners para os inputs de Nível e Alvo
+ * (NOVO v3.0.0) Manipula o drop de um CAMPEÃO (Aliado ou Inimigo)
+ */
+function handleChampionDrop(evt, target) { // target é 'aliado' ou 'inimigo'
+    const el = evt.item; // O clone que foi solto
+    const dropzone = (target === 'aliado') ? document.getElementById('campeao-selecionado-dropzone') : document.getElementById('inimigo-selecionado-dropzone');
+
+    // Comentário (Debug): Rejeita o drop se não for um campeão.
+    if (el.dataset.type !== 'champion') {
+        console.warn(`Rejeitado: Apenas campeões são permitidos na zona do ${target}.`);
+        el.parentNode.removeChild(el); // Destrói o clone
+        return;
+    }
+
+    // Comentário: Procura por um campeão (div com data-id) que *já* esteja na zona.
+    const existingChamp = dropzone.querySelector('div[data-id]');
+    if (existingChamp) {
+        existingChamp.remove(); // Remove o campeão antigo
+    }
+    
+    // Comentário: Esconde o texto "Aliado" / "Inimigo".
+    const placeholder = dropzone.querySelector('span');
+    if (placeholder) placeholder.style.display = 'none';
+
+    // Comentário: Atualiza o estado global com o ID do campeão selecionado.
+    if (target === 'aliado') {
+        currentState.championId = el.dataset.id;
+        console.log(`Campeão Aliado: ${currentState.championId}`);
+    } else {
+        currentState.enemyChampionId = el.dataset.id;
+        console.log(`Campeão Inimigo: ${currentState.enemyChampionId}`);
+    }
+    
+    // Comentário: Adiciona um listener de clique no clone para removê-lo.
+    el.addEventListener('click', () => {
+        el.remove();
+        if (placeholder) placeholder.style.display = 'block'; // Mostra o placeholder novamente
+        
+        // Comentário: Limpa o estado
+        if (target === 'aliado') {
+            currentState.championId = null;
+        } else {
+            currentState.enemyChampionId = null;
+        }
+        
+        triggerCalculations(); // Recalcula (para zerar os stats)
+    });
+
+    triggerCalculations(); // Dispara o cálculo
+}
+
+/**
+ * (NOVO v3.0.0) Esconde placeholders de itens quando o drag inicia
+ */
+function handleItemDragStart(dropzone) {
+    // Comentário: Removemos os placeholders visuais ao soltar o primeiro item.
+    const placeholders = dropzone.querySelectorAll('.item-slot-placeholder');
+    placeholders.forEach(p => p.style.display = 'none');
+}
+
+/**
+ * (NOVO v3.0.0) Manipula o drop de um ITEM (Aliado ou Inimigo)
+ */
+function handleItemDrop(evt, target) { // target é 'aliado' ou 'inimigo'
+    const el = evt.item; // O clone que foi solto
+    const dropzone = (target === 'aliado') ? document.getElementById('itens-selecionados-dropzone') : document.getElementById('inimigo-itens-dropzone');
+
+    // Comentário (Debug): Rejeita o drop se *não* for um item.
+    if (el.dataset.type !== 'item') {
+        console.warn(`Rejeitado: Apenas itens são permitidos na zona do ${target}.`);
+         el.parentNode.removeChild(el); // Destrói o clone
+         return;
+    }
+
+    // Comentário: Verifica o limite de 6 itens.
+    const existingItems = dropzone.querySelectorAll('div[data-id]');
+    if (existingItems.length >= 6) {
+         console.warn(`Rejeitado: Limite de 6 itens atingido para ${target}.`);
+         el.parentNode.removeChild(el); // Destrói o clone
+         return;
+    }
+
+    // Comentário: Atualiza o array de IDs de itens no estado global.
+    const newItemList = Array.from(dropzone.children)
+                             .map(child => child.dataset.id)
+                             .filter(id => id); // Filtra IDs nulos
+    
+    if (target === 'aliado') {
+        currentState.itemIds = newItemList;
+        console.log(`Itens Aliado: [${currentState.itemIds.join(', ')}]`);
+    } else {
+        currentState.enemyItemIds = newItemList;
+        console.log(`Itens Inimigo: [${currentState.enemyItemIds.join(', ')}]`);
+    }
+
+    // Comentário: Adiciona listener de clique para remover o item.
+    el.addEventListener('click', () => {
+        el.remove();
+        
+        // Comentário: Atualiza o estado global após a remoção.
+        const currentItemList = Array.from(dropzone.children)
+                                     .map(child => child.dataset.id)
+                                     .filter(id => id);
+        
+        if (target === 'aliado') {
+            currentState.itemIds = currentItemList;
+            // Comentário: Se todos os itens foram removidos, mostra os placeholders.
+            if (currentState.itemIds.length === 0) {
+                 const placeholders = dropzone.querySelectorAll('.item-slot-placeholder');
+                 placeholders.forEach(p => p.style.display = 'block');
+            }
+        } else {
+            currentState.enemyItemIds = currentItemList;
+            if (currentState.enemyItemIds.length === 0) {
+                 const placeholders = dropzone.querySelectorAll('.item-slot-placeholder');
+                 placeholders.forEach(p => p.style.display = 'block');
+            }
+        }
+        
+        triggerCalculations(); // Recalcula
+    });
+
+    triggerCalculations(); // Dispara o cálculo
+}
+
+
+/**
+ * Configura os listeners para os inputs de Nível (Aliado e Inimigo)
  */
 function setupInputListeners() {
-    // Comentário: (Tarefa 5) Os IDs dos inputs permanecem os mesmos,
-    // mesmo que o layout tenha mudado.
+    // Comentário: (Refatoração v3.0.0) Inputs de Nível
     const levelInput = document.getElementById('level');
-    const targetArmorInput = document.getElementById('target-armor');
-    const targetMrInput = document.getElementById('target-mr');
-    const displayArmor = document.getElementById('display-armor'); // Para o display de DPS
+    const enemyLevelInput = document.getElementById('enemy-level');
 
-    // Comentário: Listener para o Nível do campeão.
+    // Comentário: Listener para o Nível do ALIADO.
     levelInput.addEventListener('change', (e) => {
         currentState.level = parseInt(e.target.value) || 1;
-        console.log(`Nível alterado: ${currentState.level}`);
-        calculateTotalStats(); // Recálculo total necessário.
+        console.log(`Nível Aliado alterado: ${currentState.level}`);
+        triggerCalculations(); // Recálculo total necessário.
     });
     
-    // Comentário: Listener para a Armadura do alvo.
-    targetArmorInput.addEventListener('input', (e) => {
-        const armor = parseInt(e.target.value) || 0;
-        currentState.targetArmor = armor;
-        if (displayArmor) displayArmor.innerText = armor; // Atualiza o display de DPS
-        console.log(`Armadura Alvo: ${currentState.targetArmor}`);
-        calculateTotalStats(); // Recálculo total (Otimização futura: recalcular só DPS).
-    });
-
-    // Comentário: Listener para a Resistência Mágica do alvo.
-    targetMrInput.addEventListener('input', (e) => {
-        currentState.targetMr = parseInt(e.target.value) || 0;
-        console.log(`RM Alvo: ${currentState.targetMr}`);
-        calculateTotalStats(); // Recálculo total (Otimização futura: recalcular só DPS).
+    // Comentário: Listener para o Nível do INIMIGO.
+    enemyLevelInput.addEventListener('change', (e) => {
+        currentState.enemyLevel = parseInt(e.target.value) || 1;
+        console.log(`Nível Inimigo alterado: ${currentState.enemyLevel}`);
+        triggerCalculations(); // Recálculo total necessário.
     });
 }
 
@@ -435,8 +506,11 @@ function populateBiblioteca(championData, itemData) {
  */
 function createBibliotecaElement(id, type, name, imageUrl) {
     const div = document.createElement('div');
-    // Comentário: 'style.display = 'flex'' é usado pela função de filtro.
-    div.className = 'w-16 h-16 bg-gray-dark rounded-lg cursor-move p-0 relative overflow-hidden group shadow-lg border border-gray-light';
+    // Comentário: (Otimização v3.0.0)
+    // - Removido 'overflow-hidden' para o tooltip funcionar
+    // - Adicionado 'group-hover:z-50' para o card pular para frente
+    // - Adicionado 'style.display = 'flex'' para o filtro funcionar
+    div.className = 'w-16 h-16 bg-gray-dark rounded-lg cursor-move p-0 relative group shadow-lg border border-gray-light group-hover:z-50';
     div.style.display = 'flex'; // Usado pelo filtro
     div.dataset.id = id; // ID (ex: "Aatrox" ou "3031")
     div.dataset.type = type; // 'champion' or 'item' (Usado pelo filtro)
@@ -444,38 +518,112 @@ function createBibliotecaElement(id, type, name, imageUrl) {
     const img = document.createElement('img');
     img.src = imageUrl;
     img.alt = name; // Usado pelo filtro de busca
-    img.className = "w-full h-full object-cover transition-transform duration-200 group-hover:scale-110";
+    img.className = "w-full h-full object-cover transition-transform duration-200 group-hover:scale-110 rounded-lg";
     img.draggable = false; // Previne o "ghost image" padrão do HTML5
 
+    // Comentário: (Otimização v3.0.0) Tooltip (Nome)
+    // - Adicionado 'z-10' para aparecer sobre a imagem
+    // - O 'truncate' é o problema, mas a UI nova o torna visível
     const nameOverlay = document.createElement('span');
     nameOverlay.innerText = name;
-    nameOverlay.className = "absolute bottom-0 left-0 w-full bg-black bg-opacity-70 text-white text-xs text-center p-1 truncate transition-opacity duration-200 opacity-0 group-hover:opacity-100";
+    nameOverlay.className = "absolute bottom-0 left-0 w-full bg-black bg-opacity-70 text-white text-xs text-center p-1 truncate transition-opacity duration-200 opacity-0 group-hover:opacity-100 rounded-b-lg z-10";
 
     div.appendChild(img);
     div.appendChild(nameOverlay);
+    
+    // Comentário: (NOVO v3.0.0) Adiciona listener para mostrar receita
+    div.addEventListener('click', () => showRecipe(id, type));
+
     return div;
 }
 
 /**
- * Calcula todos os status (Comando 3 - Coração)
- * Esta é a função central que recalcula tudo.
+ * (NOVO v3.0.0) Mostra a receita de um item clicado
  */
-function calculateTotalStats() {
-    // Comentário: Se nenhum campeão estiver selecionado, zera a UI.
-    if (!currentState.championId) {
-        renderRPGCard(null); // Limpa o Card RPG
-        renderDPS(0); // Zera o DPS
+function showRecipe(id, type) {
+    const receitaBloco = document.getElementById('receita-bloco');
+    if (!receitaBloco) return;
+
+    // Comentário: Limpa o bloco se for um campeão ou item sem receita
+    if (type === 'champion') {
+        receitaBloco.innerHTML = '<span class="text-gray-500">Clique em um item da biblioteca para ver sua receita.</span>';
         return;
     }
 
+    const item = DDragonData.itemData[id];
+    
+    // Comentário: Verifica se o item tem a propriedade 'from' (de onde ele vem)
+    if (!item || !item.from || item.from.length === 0) {
+        receitaBloco.innerHTML = `<span class="text-gray-400">${item.name} não possui receita.</span>`;
+        return;
+    }
+
+    // Comentário: Se tem receita, limpa o bloco e constrói
+    receitaBloco.innerHTML = '';
+    
+    // Comentário: Itera sobre os IDs dos sub-itens
+    item.from.forEach(subItemId => {
+        const subItem = DDragonData.itemData[subItemId];
+        if (!subItem) return;
+
+        // Comentário: Cria o elemento visual para o sub-item
+        const div = document.createElement('div');
+        div.className = 'w-12 h-12 bg-gray-darkest rounded-lg relative group border border-gray-light';
+        div.title = `${subItem.name} (${subItem.gold.total}G)`; // Tooltip nativo
+
+        const img = document.createElement('img');
+        img.src = `${DDragonData.baseUrl}/img/item/${subItem.image.full}`;
+        img.alt = subItem.name;
+        img.className = "w-full h-full object-cover rounded-lg";
+        
+        div.appendChild(img);
+        receitaBloco.appendChild(div);
+    });
+}
+
+/**
+ * (NOVO v3.0.0) Gatilho central para recalcular tudo.
+ * Esta função chama os cálculos de stats e depois o cálculo de DPS.
+ */
+function triggerCalculations() {
+    // Comentário: Calcula os status do Aliado
+    const aliadoStats = calculateStats(currentState.championId, currentState.level, currentState.itemIds);
+    // Comentário: Calcula os status do Inimigo
+    const inimigoStats = calculateStats(currentState.enemyChampionId, currentState.enemyLevel, currentState.enemyItemIds);
+
+    // Comentário: Renderiza os dois cards RPG
+    renderRPGCard('aliado', aliadoStats);
+    renderRPGCard('inimigo', inimigoStats);
+
+    // Comentário: Calcula o DPS final (Aliado vs Inimigo)
+    calculateDPS(aliadoStats, inimigoStats);
+}
+
+
+/**
+ * (Refatorado v3.0.0) Calcula todos os status para um alvo (aliado ou inimigo)
+ * Esta é uma função "pura": ela recebe estado e retorna um resultado.
+ */
+function calculateStats(championId, level, itemIds) {
+    // Comentário: Se nenhum campeão estiver selecionado, retorna nulo.
+    if (!championId) {
+        return null;
+    }
+    
+    // Comentário: Garante que os dados dos campeões já foram carregados.
+    if (!DDragonData.championData[championId]) {
+        console.error(`Dados do campeão ${championId} não encontrados.`);
+        return null;
+    }
+
     // Comentário: Nível 1 = índice 0 para fórmulas de escalonamento.
-    const level = currentState.level - 1; 
-    const champBase = DDragonData.championData[currentState.championId].stats;
+    const levelIndex = level - 1; 
+    const champBase = DDragonData.championData[championId].stats;
 
     // 1. Calcula Stats Base (Fórmula oficial)
     // Comentário: Fórmula oficial de escalonamento de status por nível.
     const getStatAtLevel = (base, perLevel) => {
-        return base + (perLevel * level * (0.7025 + (0.0175 * level)));
+        return base + (perLevel * levelIndex * (0.7025 + (0.0175 * levelIndex)));
     };
 
     // Comentário: Objeto que armazena os status totais calculados.
@@ -485,9 +633,7 @@ function calculateTotalStats() {
         ad: getStatAtLevel(champBase.attackdamage, champBase.attackdamageperlevel),
         armor: getStatAtLevel(champBase.armor, champBase.armorperlevel),
         spellblock: getStatAtLevel(champBase.spellblock, champBase.spellblockperlevel),
-        // Attack Speed é especial
         attackspeed_base: champBase.attackspeed, // AS Base do Nível 1
-        attackspeed_bonus_ratio: champBase.attackspeedperlevel / 100, // Bônus por nível
         attackspeed: champBase.attackspeed * (1 + (getStatAtLevel(0, champBase.attackspeedperlevel) / 100)),
         crit: 0, // Crítico começa em 0, vem apenas de itens.
         movespeed: champBase.movespeed
@@ -497,7 +643,7 @@ function calculateTotalStats() {
     let itemAttackSpeedBonus = 0; // Bônus de AS (Percentual)
 
     // Comentário: Itera sobre os IDs dos itens selecionados.
-    for (const itemId of currentState.itemIds) {
+    for (const itemId of itemIds) {
         const itemStats = DDragonData.itemData[itemId]?.stats;
         if (!itemStats) continue; // Pula se o item não tiver stats (raro)
         
@@ -522,25 +668,23 @@ function calculateTotalStats() {
     // Comentário: Recalcula o AS total com os bônus percentuais.
     totalStats.attackspeed = totalStats.attackspeed_base * (1 + asBonusFromLevel + asBonusFromItems);
     
-    // 4. Renderiza o Card RPG
-    // Comentário: Atualiza a UI do Card RPG com os novos status.
-    renderRPGCard(totalStats);
-
-    // 5. Calcula o DPS
-    // Comentário: Chama a função final de cálculo de dano.
-    calculateDPS(totalStats);
+    // Comentário: Retorna o objeto de status final.
+    return totalStats;
 }
 
 /**
- * Renderiza o "Card RPG" com os status calculados
+ * (Refatorado v3.0.0) Renderiza o "Card RPG" (Aliado ou Inimigo)
  */
-function renderRPGCard(stats) {
-    const card = document.getElementById('card-rpg-stats');
+function renderRPGCard(target, stats) { // target é 'aliado' ou 'inimigo'
+    const cardId = (target === 'aliado') ? 'card-rpg-stats-aliado' : 'card-rpg-stats-inimigo';
+    const card = document.getElementById(cardId);
+    if (!card) return; // Sai se o elemento não existir
+
     const pre = card.querySelector('pre');
 
     // Comentário: Se 'stats' for nulo (sem campeão), limpa o card.
     if (!stats) {
-        pre.innerText = "<!-- Selecione um Campeão -->";
+        pre.innerText = (target === 'aliado') ? "<!-- Selecione um Campeão -->" : "<!-- Selecione um Inimigo -->";
         return;
     }
 
@@ -559,31 +703,34 @@ Vel. Movimento: ${stats.movespeed.toFixed(0)}
 }
 
 /**
- * Calcula o DPS final (Comando 3 - Resultado)
+ * (Refatorado v3.0.0) Calcula o DPS final (Aliado vs Inimigo)
  */
-function calculateDPS(totalStats) {
-    // Comentário: Se 'totalStats' for nulo, zera o DPS.
-    if (!totalStats) {
+function calculateDPS(aliadoStats, inimigoStats) {
+    // Comentário: Se 'aliadoStats' for nulo, zera o DPS.
+    if (!aliadoStats) {
         renderDPS(0);
         return;
     }
     
-    // Comentário: Pega a armadura do alvo do estado global.
-    const targetArmor = currentState.targetArmor;
+    // Comentário: Pega a armadura do INIMIGO.
+    // Se o inimigo não existir, assume 100 de armadura (padrão antigo).
+    const targetArmor = inimigoStats ? inimigoStats.armor : 100;
     
     // 1. Multiplicador de Dano (Armadura)
     // Comentário: Fórmula de redução de dano por armadura.
-    const damageMultiplier = 100 / (100 + targetArmor);
+    // Garante que a armadura não seja negativa (ex: Trundle R)
+    const effectiveArmor = Math.max(0, targetArmor);
+    const damageMultiplier = 100 / (100 + effectiveArmor);
 
     // 2. Cálculo de DPS com Crítico (MISSÃO 6 - EXECUTADA)
     
-    // Comentário: Converte a chance de crítico de 0-100 para 0.0-1.0.
-    const critChance = totalStats.crit / 100;
+    // Comentário: Converte a chance de crítico do ALIADO de 0-100 para 0.0-1.0.
+    const critChance = aliadoStats.crit / 100;
     
     // Comentário: Bônus de dano crítico padrão (100% de dano extra).
     let critDamageBonus = 1.0; 
     
-    // Comentário: Verifica se Gume do Infinito (ID 3031) está nos itens.
+    // Comentário: Verifica se Gume do Infinito (ID 3031) está nos itens do ALIADO.
     const hasInfinityEdge = currentState.itemIds.includes('3031');
     if (hasInfinityEdge) {
         // Comentário: Gume (14.13+) aumenta o bônus para 150%.
@@ -592,7 +739,7 @@ function calculateDPS(totalStats) {
     
     // Comentário: Fórmula de DPS Médio (incluindo crítico).
     // DPS_Médio = DPS_Base * ( 1 + (ChanceDeCritico * BonusDeDanoCritico) )
-    const baseDPS = (totalStats.ad * totalStats.attackspeed) * damageMultiplier;
+    const baseDPS = (aliadoStats.ad * aliadoStats.attackspeed) * damageMultiplier;
     const dps = baseDPS * (1 + (critChance * critDamageBonus));
 
     // Comentário: Renderiza o valor final na UI.
@@ -617,7 +764,10 @@ function renderDPS(dps) {
  */
 function handleFiltro() {
     // Comentário: Pega o termo de busca (em minúsculas) do input.
-    const termo = document.getElementById('filtro-biblioteca').value.toLowerCase();
+    const termoInput = document.getElementById('filtro-biblioteca');
+    if (!termoInput) return; // Guarda de segurança
+    const termo = termoInput.value.toLowerCase();
+    
     // Comentário: Pega a aba ativa (champion/item) do estado global.
     const activeType = currentState.activeTab;
     
@@ -627,7 +777,8 @@ function handleFiltro() {
     // Comentário: Pega todos os elementos arrastáveis na biblioteca.
     const itens = bibliotecaLista.querySelectorAll('div[data-id]'); 
     
-    // Comentário: 'flex' é o display padrão que definimos no 'createBibliotecaElement'.
+    // Comentário: (Refatoração v3.0.0) O display é 'grid' (definido no HTML),
+    // mas os itens filhos são 'flex'.
     const displayType = 'flex'; 
 
     for (const item of itens) {

@@ -1,4 +1,10 @@
 <!DOCTYPE html>
+<!-- 
+  v3.0.0 - Refatoração Completa da HUD
+  Protocolo:
+  1. Nossa Máxima: Desperdício de energia é fome e desespero.
+  2. Tudo deve estar comentado: Para guia, debug e brainstorming.
+-->
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
@@ -79,12 +85,10 @@
 <body class="p-0">
 
     <!-- AD BANNER TOPO (TAREFA 4) E SELEÇÃO DE IDIOMA (v2.2.0) -->
-    <!-- Comentário (i18n): Header modificado para incluir seleção de idioma -->
     <header id="main-header" class="w-full h-24 bg-gray-dark flex items-center justify-between p-4 shadow-lg z-10">
         
         <!-- Comentário: Botões de Idioma (i18n) -->
         <div class="flex gap-2">
-            <!-- Comentário: 'opacity-100' é a aba ativa, 'opacity-50' é a inativa -->
             <!-- Comentário: Usamos emojis para performance (sem carregar imagens) -->
             <button id="lang-br" class="text-2xl opacity-100 hover:opacity-100 transition-opacity duration-200" title="Mudar para Português (BR)">🇧🇷</button>
             <button id="lang-us" class="text-2xl opacity-50 hover:opacity-100 transition-opacity duration-200" title="Mudar para Inglês (US)">🇺🇸</button>
@@ -101,130 +105,123 @@
     </header>
 
     <!-- ÁREA PRINCIPAL DO APP (flex-1 para preencher o espaço) -->
-    <!-- Comentário: (Refatoração v2.1.1 - CORREÇÃO DE OVERFLOW) -->
-    <!-- Adicionado 'min-h-0' para forçar o flex-1 a respeitar o limite de altura -->
-    <!-- Isso previne que as colunas internas transbordem para trás do footer -->
-    <div class="flex-1 grid grid-cols-1 lg:grid-cols-6 gap-4 p-4 overflow-hidden min-h-0">
+    <!-- Comentário: (Refatoração v3.0.0) Layout 3 colunas: Aliado (3) | Biblioteca (6) | Inimigo (3) -->
+    <div class="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-4 p-4 overflow-hidden min-h-0">
 
-        <!-- COLUNA 1: Biblioteca (Campeões e Itens) -->
-        <!-- Comentário: (Refatoração v2.1.0) Expandido para col-span-2 (33%) -->
-        <div class="lg:col-span-2 bg-gray-darkest p-4 rounded-lg shadow-lg flex flex-col h-full">
+        <!-- COLUNA 1: CAMPEÃO ALIADO (Esquerda) -->
+        <!-- Comentário: (Refatoração v3.0.0) col-span-3 (25%) -->
+        <div class="lg:col-span-3 bg-gray-darkest p-4 rounded-lg shadow-lg flex flex-col h-full overflow-y-auto">
+            <h2 class="text-2xl font-bold text-neon-green mb-4">Aliado</h2>
+            
+            <!-- Comentário: (Refatoração v3.0.0) Agrupamento de Campeão e Nível -->
+            <div class="bg-gray-dark rounded-lg p-4 flex gap-4 items-center">
+                <!-- Comentário: (Otimização v3.0.0) Dropzone 64x64px -->
+                <div id="campeao-selecionado-dropzone" class="w-16 h-16 bg-gray-darkest rounded-lg flex-shrink-0 flex items-center justify-center border-2 border-dashed border-gray-light text-gray-500 relative">
+                    <!-- Comentário: O span é um placeholder de texto -->
+                    <span class="text-center text-xs p-1">Aliado</span>
+                </div>
+                <!-- Nível -->
+                <div class="flex-grow">
+                    <label for="level" class="block text-sm font-medium text-neon-green">Nível (Aliado)</label>
+                    <input type="number" id="level" name="level" value="1" min="1" max="18"
+                           class="mt-1 block w-full bg-gray-light border-gray-light rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-neon-green">
+                </div>
+            </div>
+
+            <!-- Card RPG de Status (ALIADO) -->
+            <div id="card-rpg" class="mt-4">
+                <h3 class="text-lg font-semibold text-gray-300 mb-2">Status Totais (Aliado)</h3>
+                <div id="card-rpg-stats-aliado" class="bg-gray-dark rounded-lg p-4">
+                    <!-- Comentário: (Refatoração v3.0.0) ID alterado para aliado -->
+                    <pre class="text-sm text-gray-200 whitespace-pre-wrap font-mono"><!-- Selecione um Campeão --></pre>
+                </div>
+            </div>
+
+            <!-- Bloco de DPS -->
+            <div class="mt-4 text-center">
+                <h2 class="text-2xl font-bold text-neon-green mb-4">DPS (AA)</h2>
+                <div class="bg-gray-dark rounded-full w-48 h-48 flex items-center justify-center border-4 border-neon-green shadow-neon mx-auto">
+                    <span id="resultado-dps" class="text-6xl font-bold text-white">0</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- COLUNA 2: BIBLIOTECA (Meio) -->
+        <!-- Comentário: (Refatoração v3.0.0) col-span-6 (50%) -->
+        <div class="lg:col-span-6 bg-gray-darkest p-4 rounded-lg shadow-lg flex flex-col h-full">
             <h2 class="text-2xl font-bold text-neon-green mb-4">Biblioteca</h2>
             
-            <!-- Abas (TAREFA 2) -->
+            <!-- Abas -->
             <div class="mb-4">
-                <!-- Comentário: IDs para os listeners de clique -->
                 <button id="tab-campeoes" class="bg-gray-light text-neon-green px-4 py-2 rounded-t-lg">Campeões</button>
                 <button id="tab-itens" class="bg-gray-dark text-gray-500 px-4 py-2 rounded-t-lg opacity-50">Itens</button>
             </div>
 
-            <!-- CAMPO DE FILTRO (MISSÃO 6 - OTIMIZAÇÃO) -->
+            <!-- Filtro -->
             <div class="mb-4">
                 <input type="text" id="filtro-biblioteca" placeholder="Filtrar por nome..."
                        class="w-full bg-gray-light border border-gray-light text-gray-200 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-neon-green focus:border-transparent">
             </div>
             
-            <!-- Área de Itens/Campeões (para popular com JS) -->
-            <!-- Comentário: (Refatoração v2.1.1 - CORREÇÃO DE OVERFLOW) -->
-            <!-- Trocado 'h-full' por 'flex-1' -->
-            <!-- 'flex-1' faz este bloco ocupar o *espaço restante* no flex-col pai -->
-            <!-- Isso permite que o 'overflow-y-auto' funcione corretamente (O SCROLL) -->
-            <div id="biblioteca-lista" class="flex flex-wrap gap-2 overflow-y-auto flex-1 p-2 bg-gray-dark rounded-b-lg rounded-tr-lg justify-start content-start">
+            <!-- Área da Biblioteca (Scroll) -->
+            <!-- Comentário: (Refatoração v3.0.0) grid-cols-6 como solicitado, altura flex-1 para scroll -->
+            <div id="biblioteca-lista" class="grid grid-cols-6 gap-2 overflow-y-auto flex-1 p-2 bg-gray-dark rounded-b-lg rounded-tr-lg content-start">
                 <!-- Comentário: Placeholders são substituídos pelo app.js -->
                 <div class="w-16 h-16 bg-gray-light rounded-lg animate-pulse"></div>
             </div>
+
+            <!-- Bloco de Receita (NOVO v3.0.0) -->
+            <div class="mt-4">
+                <h3 class="text-lg font-semibold text-gray-300 mb-2">Receita do Item</h3>
+                <!-- Comentário: Este bloco será populado pelo app.js ao clicar em um item -->
+                <div id="receita-bloco" class="bg-gray-dark rounded-lg p-4 min-h-[100px] flex items-center justify-center gap-2">
+                    <span class="text-gray-500">Clique em um item da biblioteca para ver sua receita.</span>
+                </div>
+            </div>
         </div>
 
-        <!-- COLUNA 2: Card Ativo (Cálculos) -->
-        <!-- Comentário: (Refatoração v2.1.0) Expandido para col-span-3 (50%) -->
-        <!-- Comentário: (Refatoração v2.1.1) Adicionado 'h-full' que faltava para consistência -->
+        <!-- COLUNA 3: CAMPEÃO INIMIGO (Direita) -->
+        <!-- Comentário: (Refatoração v3.0.0) col-span-3 (25%) -->
         <div class="lg:col-span-3 bg-gray-darkest p-4 rounded-lg shadow-lg flex flex-col h-full overflow-y-auto">
-            
-            <!-- Comentário: Nova estrutura de layout (Tarefas 3, 5) -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <!-- Placeholder 3D (TAREFA 3) -->
-                <div class="bg-gray-dark rounded-lg p-4 h-64 flex items-center justify-center border-2 border-dashed border-gray-light text-gray-500">
-                    Placeholder (Modelo 3D)
+            <h2 class="text-2xl font-bold text-neon-green mb-4">Inimigo</h2>
+
+            <!-- Campeão Inimigo (NOVO v3.0.0) -->
+            <div class="bg-gray-dark rounded-lg p-4 flex gap-4 items-center">
+                <!-- Comentário: (Otimização v3.0.0) Dropzone 64x64px -->
+                <div id="inimigo-selecionado-dropzone" class="w-16 h-16 bg-gray-darkest rounded-lg flex-shrink-0 flex items-center justify-center border-2 border-dashed border-gray-light text-gray-500 relative">
+                    <span class="text-center text-xs p-1">Inimigo</span>
                 </div>
-                
-                <!-- Status do Campeão (TAREFA 5) -->
-                <div class="bg-gray-dark rounded-lg p-4 h-64 flex flex-col justify-between">
-                    <h3 class="text-lg font-semibold text-neon-green mb-2">Campeão</h3>
-                    <!-- Dropzone do Campeão -->
-                    <div id="campeao-selecionado-dropzone" class="bg-gray-darkest rounded-lg p-4 h-40 flex items-center justify-center border-2 border-dashed border-gray-light text-gray-500 relative">
-                        <span class="text-center">Solte o Campeão Aqui</span>
-                    </div>
-                    <!-- Nível -->
-                    <div class="mt-4">
-                        <label for="level" class="block text-sm font-medium text-neon-green">Nível</label>
-                        <input type="number" id="level" name="level" value="1" min="1" max="18"
-                               class="mt-1 block w-full bg-gray-light border-gray-light rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-neon-green">
-                    </div>
+                <!-- Nível Inimigo -->
+                <div class="flex-grow">
+                    <label for="enemy-level" class="block text-sm font-medium text-neon-green">Nível (Inimigo)</label>
+                    <input type="number" id="enemy-level" name="enemy-level" value="1" min="1" max="18"
+                           class="mt-1 block w-full bg-gray-light border-gray-light rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-neon-green">
                 </div>
             </div>
 
-            <!-- Comentário: Nova estrutura de layout (Tarefas 1, 5) -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                <!-- Itens (TAREFA 1) -->
-                <div class="bg-gray-dark rounded-lg p-4">
-                    <h3 class="text-lg font-semibold text-gray-300 mb-2">Itens (6 Slots)</h3>
-                    <!-- Comentário: Dropzone única, mas estilizada como grid 3x2 -->
-                    <div id="itens-selecionados-dropzone" class="rounded-lg min-h-[140px] grid grid-cols-3 gap-2">
-                        <!-- Comentário: Slots vazios são apenas visuais, a lógica de drop é na div pai -->
-                        <div class="item-slot-placeholder"></div>
-                        <div class="item-slot-placeholder"></div>
-                        <div class="item-slot-placeholder"></div>
-                        <div class="item-slot-placeholder"></div>
-                        <div class="item-slot-placeholder"></div>
-                        <div class="item-slot-placeholder"></div>
-                    </div>
-                </div>
-
-                <!-- Status do Inimigo (TAREFA 5) -->
-                <div class="bg-gray-dark rounded-lg p-4">
-                    <h3 class="text-lg font-semibold text-gray-300 mb-2">Alvo (Inimigo)</h3>
-                    <div class="mt-4">
-                        <label for="target-armor" class="block text-sm font-medium text-gray-400">Armadura</label>
-                        <input type="number" id="target-armor" name="target-armor" value="100" min="0"
-                               class="mt-1 block w-full bg-gray-light border-gray-light rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-neon-green">
-                    </div>
-                    <div class="mt-4">
-                        <label for="target-mr" class="block text-sm font-medium text-gray-400">Res. Mágica</label>
-                        <input type="number" id="target-mr" name="target-mr" value="100" min="0"
-                               class="mt-1 block w-full bg-gray-light border-gray-light rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-neon-green">
-                    </div>
+            <!-- Itens (INIMIGO v3.0.0) -->
+            <div class="bg-gray-dark rounded-lg p-4 mt-4">
+                <h3 class="text-lg font-semibold text-gray-300 mb-2">Itens (Inimigo)</h3>
+                <!-- Comentário: Dropzone única, mas estilizada como grid 3x2 -->
+                <div id="inimigo-itens-dropzone" class="rounded-lg min-h-[140px] grid grid-cols-3 gap-2">
+                    <!-- Comentário: Slots vazios são apenas visuais -->
+                    <div class="item-slot-placeholder"></div>
+                    <div class="item-slot-placeholder"></div>
+                    <div class="item-slot-placeholder"></div>
+                    <div class="item-slot-placeholder"></div>
+                    <div class="item-slot-placeholder"></div>
+                    <div class="item-slot-placeholder"></div>
                 </div>
             </div>
 
-            <!-- Card RPG de Status -->
-            <div id="card-rpg" class="mt-4">
-                <h3 class="text-lg font-semibold text-gray-300 mb-2">Status Totais (Card RPG)</h3>
-                <div id="card-rpg-stats" class="bg-gray-dark rounded-lg p-4">
-                    <pre class="text-sm text-gray-200 whitespace-pre-wrap font-mono"><!-- Selecione um Campeão --></pre>
+            <!-- Card RPG de Status (INIMIGO) -->
+            <div id="card-rpg-inimigo" class="mt-4">
+                <h3 class="text-lg font-semibold text-gray-300 mb-2">Status Totais (Inimigo)</h3>
+                <div id="card-rpg-stats-inimigo" class="bg-gray-dark rounded-lg p-4">
+                    <!-- Comentário: (Refatoração v3.0.0) ID alterado para inimigo -->
+                    <pre class="text-sm text-gray-200 whitespace-pre-wrap font-mono"><!-- Selecione um Inimigo --></pre>
                 </div>
             </div>
-        </div>
-
-        <!-- COLUNA 3: DPS e Anúncios (Conjunção) -->
-        <!-- Comentário: (Refatoração v2.1.0) Reduzido para col-span-1 (16.6%) -->
-        <!-- Comentário: (Refatoração v2.1.1) A coluna inteira (h-full + overflow-y-auto) -->
-        <!-- garante o scroll interno se o AD for muito alto. -->
-        <div class="lg:col-span-1 bg-gray-darkest p-4 rounded-lg shadow-lg flex flex-col h-full items-center justify-start text-center overflow-y-auto">
-            <!-- DPS -->
-            <h2 class="text-2xl font-bold text-neon-green mb-4">DPS (AA)</h2>
-            <div class="bg-gray-dark rounded-full w-48 h-48 flex items-center justify-center border-4 border-neon-green shadow-neon flex-shrink-0">
-                <span id="resultado-dps" class="text-6xl font-bold text-white">0</span>
-            </div>
-            <p class="mt-4 text-gray-400 flex-shrink-0">vs. alvo com <span id="display-armor">100</span> Armadura</p>
-            
-            <!-- Ad Lateral (TAREFA 4) - Movido para cá -->
-            <aside id="adsense-right-vertical" class="mt-6 w-full flex-grow flex flex-col items-center justify-start text-gray-500">
-                <h3 class="text-lg font-semibold text-gray-300 mb-2">Anúncio</h3>
-                <!-- Comentário: Unidade de Anúncio Vertical (ex: 300x600) deve ser inserida aqui -->
-                <div class="w-full max-w-[300px] h-96 bg-gray-dark border border-gray-light flex items-center justify-center rounded-lg mt-4">
-                    Espaço (Lateral 300x600)
-                </div>
-            </aside>
         </div>
 
     </div>
