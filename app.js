@@ -1,5 +1,5 @@
 /**
- * app.js v5.0.9 (Refatoração de Performance - Hotfix D&D Final)
+ * app.js v5.0.10 (Refatoração de Performance - Hotfix D&D Lógico)
  * Cérebro central da Calculadora de DPS.
  *
  * PROTOCOLO DE PERFORMANCE (v5.0.4):
@@ -7,15 +7,15 @@
  * 2. Tudo deve estar comentado: Para guia, debug e brainstorming.
  * 3. Repetir 1 e 2.
  *
- * ATUALIZAÇÃO v5.0.9 (Hotfix D&D Final):
- * - (FOME E DESESPERO) O D&D v5.0.7/v5.0.8 ainda estava quebrado (imagem invisível).
- * - (CAUSA RAIZ) A lógica "el.replaceWith(clone)" (v5.0.7) estava em conflito
- * com a remoção automática do 'el' pelo Sortable.js.
- * - (SOLUÇÃO) A lógica foi reescrita para a "versão antiga" (alta performance):
- * 1. Removemos 'el' (o clone temporário) manualmente.
- * 2. Removemos 'existingChamp' (o item antigo) manualmente.
- * 3. Adicionamos 'clone' (o item permanente) com appendChild.
- * Isso elimina 100% do conflito (desespero).
+ * ATUALIZAÇÃO v5.0.10 (Hotfix D&D Lógico):
+ * - (FOME E DESESPERO) O v5.0.9 corrigiu o bug visual, mas introduziu 2 bugs fatais:
+ * 1. O clique para remover o item/campeão falhava.
+ * 2. O D&D "travava" após o primeiro drop.
+ * - (CAUSA RAIZ) A lógica em handleChampionDrop/handleItemDrop (v5.0.9)
+ * removia 'el' (o clone temporário) duas vezes, causando um erro fatal de JS.
+ * - (SOLUÇÃO) A lógica foi reescrita (v5.0.10) para usar
+ * "el.replaceWith(clone)" E verificar se o item antigo (existingItem)
+ * é diferente de 'el' antes de removê-lo. Isso elimina o erro fatal.
  */
 
 // --- Estado Global da Aplicação ---
@@ -58,7 +58,7 @@ function debounce(func, delay) {
  * Função de Inicialização
  */
 function init() {
-    console.log("Cérebro carregado. Iniciando protocolo de sobrevivência. Layout v5.0.9 (Hotfix D&D Final) ativo.");
+    console.log("Cérebro carregado. Iniciando protocolo de sobrevivência. Layout v5.0.10 (Hotfix D&D Lógico) ativo.");
     
     const patchVersionEl = document.getElementById('patch-version');
     if (patchVersionEl) {
@@ -192,7 +192,7 @@ function clearItemSlot(target, slotIndex) {
  * Configura as 14 zonas de Drag-and-Drop
  */
 function setupDragAndDrop() {
-    console.log("Configurando zonas D&D (v5.0.9 - Otimizado)...");
+    console.log("Configurando zonas D&D (v5.0.10 - Otimizado)...");
 
     const bibliotecaLista = document.getElementById('biblioteca-lista');
     
@@ -238,11 +238,11 @@ function setupDragAndDrop() {
         }
     }
 
-    console.log("Sortable.js v5.0.9 (Nativo) inicializado.");
+    console.log("Sortable.js v5.0.10 (Nativo) inicializado.");
 }
 
 /**
- * (Refatorado v5.0.9 - DESESPERO HOTFIX FINAL) Manipula o drop de um CAMPEÃO
+ * (Refatorado v5.0.10 - DESESPERO HOTFIX) Manipula o drop de um CAMPEÃO
  */
 function handleChampionDrop(evt, target) {
     const el = evt.item; // O clone *temporário* do Sortable.js
@@ -255,28 +255,23 @@ function handleChampionDrop(evt, target) {
         return;
     }
 
-    // --- (INÍCIO DA CORREÇÃO v5.0.9 - DESESPERO) ---
-    // Comentário: A lógica "el.replaceWith(clone)" (v5.0.7) estava em conflito
-    // com a remoção automática do Sortable.js.
-    // Esta é a lógica correta (das "primeiras versões").
+    // --- (INÍCIO DA CORREÇÃO v5.0.10 - DESESPERO) ---
+    // Comentário: O bug v5.0.9 era remover 'el' (que era o 'existingChamp')
+    // e depois tentar removê-lo novamente, causando um erro fatal de JS.
     
-    // 1. Criamos nosso clone permanente.
+    // 1. Criamos nosso clone permanente (que NÃO tem listeners de clique).
     const clone = el.cloneNode(true);
     clone.classList.remove('sortable-ghost'); 
 
-    // 2. Removemos o campeão antigo (se houver).
+    // 2. Removemos o campeão antigo (se houver E não for o 'el' temporário).
     const existingChamp = dropzone.querySelector('div[data-id]');
-    if (existingChamp) {
+    if (existingChamp && existingChamp !== el) {
         existingChamp.remove();
     }
     
-    // 3. Adicionamos (appendChild) nosso clone permanente.
-    // (Esta é a ação que faltava)
-    dropzone.appendChild(clone);
-    
-    // 4. Removemos 'el' (o clone temporário) manualmente para
-    // que o Sortable.js não tente removê-lo e causar o bug.
-    el.parentNode.removeChild(el);
+    // 3. Substituímos 'el' (temporário) por 'clone' (permanente).
+    // Esta é uma ação atômica e segura.
+    el.replaceWith(clone);
     // --- (FIM DA CORREÇÃO) ---
     
     const placeholder = dropzone.querySelector('span');
@@ -298,6 +293,7 @@ function handleChampionDrop(evt, target) {
     }
     
     // Comentário: Adiciona o listener de clique ao *nosso* clone.
+    // (Isto agora é executado, pois o erro fatal foi corrigido.)
     clone.addEventListener('click', () => {
         clone.remove(); // Remove o *nosso* clone
         if (placeholder) placeholder.style.display = 'flex'; 
@@ -326,7 +322,7 @@ function handleChampionDrop(evt, target) {
 
 
 /**
- * (Refatorado v5.0.9 - DESESPERO HOTFIX FINAL) Manipula o drop de um ITEM
+ * (Refatorado v5.0.10 - DESESPERO HOTFIX) Manipula o drop de um ITEM
  */
 function handleItemDrop(evt, target, slotIndex) {
     const el = evt.item; // O clone *temporário*
@@ -339,22 +335,19 @@ function handleItemDrop(evt, target, slotIndex) {
          return;
     }
 
-    // --- (INÍCIO DA CORREÇÃO v5.0.9 - DESESPERO) ---
+    // --- (INÍCIO DA CORREÇÃO v5.0.10 - DESESPERO) ---
     // 1. Criamos nosso clone permanente.
     const clone = el.cloneNode(true);
     clone.classList.remove('sortable-ghost');
 
-    // 2. Removemos o item antigo (se houver).
+    // 2. Removemos o item antigo (se houver E não for 'el').
     const existingItem = slot.querySelector('div[data-id]');
-    if (existingItem) {
+    if (existingItem && existingItem !== el) {
         existingItem.remove(); 
     }
     
-    // 3. Adicionamos (appendChild) nosso clone permanente.
-    slot.appendChild(clone);
-    
-    // 4. Removemos 'el' (o clone temporário) manualmente.
-    el.parentNode.removeChild(el);
+    // 3. Substituímos 'el' (temporário) por 'clone' (permanente).
+    el.replaceWith(clone);
     // --- (FIM DA CORREÇÃO) ---
     
     const placeholder = slot.querySelector('span');
@@ -520,6 +513,8 @@ function createBibliotecaElement(id, type, name, imageUrl) {
     div.appendChild(img);
     div.appendChild(nameOverlay);
     
+    // Comentário: Este listener (showRecipe) NÃO é clonado com cloneNode(true).
+    // O bug v5.0.9 (de eu achar que era) estava errado.
     div.addEventListener('click', () => showRecipe(id, type));
 
     return div;
@@ -628,9 +623,9 @@ function calculateStats(championId, level, itemIds) {
 
     let totalStats = {
         hp: getStatAtLevel(champBase.hp, champBase.hpperlevel),
-        hpregen: getStatAtlevel(champBase.hpregen, champBase.hpregenperlevel),
+        hpregen: getStatAtLevel(champBase.hpregen, champBase.hpregenperlevel),
         mp: getStatAtLevel(champBase.mp, champBase.mpperlevel),
-        mpregen: getStatAtlevel(champBase.mpregen, champBase.mpregenperlevel),
+        mpregen: getStatAtLevel(champBase.mpregen, champBase.mpregenperlevel),
         ad: getStatAtLevel(champBase.attackdamage, champBase.attackdamageperlevel),
         armor: getStatAtLevel(champBase.armor, champBase.armorperlevel),
         spellblock: getStatAtLevel(champBase.spellblock, champBase.spellblockperlevel),
