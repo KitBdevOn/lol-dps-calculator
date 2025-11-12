@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- 
-  v3.0.0 - Refatoração Completa da HUD
+  v3.0.1 - CORREÇÃO CRÍTICA DE BUGS
   Protocolo:
   1. Nossa Máxima: Desperdício de energia é fome e desespero.
   2. Tudo deve estar comentado: Para guia, debug e brainstorming.
@@ -127,6 +127,24 @@
                            class="mt-1 block w-full bg-gray-light border-gray-light rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-neon-green">
                 </div>
             </div>
+
+            <!-- ****** INÍCIO DA CORREÇÃO (BUG 2) ****** -->
+            <!-- Comentário: (CORREÇÃO v3.0.1) Este bloco estava faltando. -->
+            <!-- Itens (ALIADO v3.0.1) -->
+            <div class="bg-gray-dark rounded-lg p-4 mt-4">
+                <h3 class="text-lg font-semibold text-gray-300 mb-2">Itens (Aliado)</h3>
+                <!-- Comentário: Dropzone única, mas estilizada como grid 3x2 -->
+                <div id="itens-selecionados-dropzone" class="rounded-lg min-h-[140px] grid grid-cols-3 gap-2">
+                    <!-- Comentário: Slots vazios são apenas visuais -->
+                    <div class="item-slot-placeholder"></div>
+                    <div class="item-slot-placeholder"></div>
+                    <div class="item-slot-placeholder"></div>
+                    <div class="item-slot-placeholder"></div>
+                    <div class="item-slot-placeholder"></div>
+                    <div class="item-slot-placeholder"></div>
+                </div>
+            </div>
+            <!-- ****** FIM DA CORREÇÃO (BUG 2) ****** -->
 
             <!-- Card RPG de Status (ALIADO) -->
             <div id="card-rpg" class="mt-4">

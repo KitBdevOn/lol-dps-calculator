@@ -1,5 +1,5 @@
 /**
- * app.js v3.0.0
+ * app.js v3.0.1 (CORREÇÃO DE BUGS)
  * Cérebro central da Calculadora de DPS.
  * Gerencia a busca de dados, a interface (D&D) e os cálculos.
  *
@@ -7,15 +7,11 @@
  * 1. Nossa Máxima: Desperdício de energia é fome e desespero.
  * 2. Tudo deve estar comentado: Para guia, debug e brainstorming.
  *
- * ATUALIZAÇÃO v3.0.0 (Refatoração Completa):
- * - Implementado sistema Aliado vs. Inimigo.
- * - `currentState` agora rastreia o estado do inimigo (campeão, nível, itens).
- * - `calculateTotalStats` refatorado para `calculateStats(championId, level, itemIds)`.
- * - `calculateDPS` agora usa os status calculados do inimigo (armadura/rm).
- * - Adicionada função `showRecipe(itemId)` para mostrar a árvore de construção.
- * - Adicionadas dropzones de Inimigo em `setupDragAndDrop`.
- * - `setupInputListeners` atualizado para o novo layout (sem targetArmor/Mr).
- * - Otimização de Tooltip (removido overflow-hidden) em `createBibliotecaElement`.
+ * ATUALIZAÇÃO v3.0.1 (Correção Crítica):
+ * - (BUG 1) Corrigido `handleFiltro` para usar `display: 'block'` (grid) em vez de `display: 'flex'`.
+ * - (BUG 1) Removido `style.display = 'flex'` do `createBibliotecaElement`.
+ * - (BUG 2) `index.html` corrigido para incluir `#itens-selecionados-dropzone` (Aliado).
+ * - (BUG 3) Corrigido `handleItemDrop` para checar `> 6` em vez de `>= 6`.
  */
 
 // --- Estado Global da Aplicação ---
@@ -54,7 +50,7 @@ document.addEventListener('DOMContentLoaded', init);
  */
 function init() {
     // Comentário (Debug): Confirma que o JS foi carregado e está executando.
-    console.log("Cérebro carregado. Iniciando protocolo de sobrevivência. Layout v3.0.0 ativo.");
+    console.log("Cérebro carregado. Iniciando protocolo de sobrevivência. Layout v3.0.1 (corrigido) ativo.");
     
     // --- LÓGICA DE IDIOMA (i18n) ---
     // Comentário: Adiciona listeners aos botões de bandeira.
@@ -203,11 +199,12 @@ function clearDropZone(zoneId, isItemZone = false) {
  */
 function setupDragAndDrop() {
     // Comentário (Debug): Confirma que as zonas D&D estão sendo configuradas.
-    console.log("Configurando zonas D&D (v3.0.0)...");
+    console.log("Configurando zonas D&D (v3.0.1)...");
 
     // Comentário: Referências de UI
     const bibliotecaLista = document.getElementById('biblioteca-lista');
     const campeaoAliadoDropzone = document.getElementById('campeao-selecionado-dropzone');
+    // Comentário: (CORREÇÃO v3.0.1 - BUG 2) Adicionando referência da dropzone de itens do aliado
     const itensAliadoDropzone = document.getElementById('itens-selecionados-dropzone');
     const campeaoInimigoDropzone = document.getElementById('inimigo-selecionado-dropzone');
     const itensInimigoDropzone = document.getElementById('inimigo-itens-dropzone');
@@ -228,12 +225,17 @@ function setupDragAndDrop() {
     });
 
     // 3. Configuração da Zona de Itens ALIADO
-    new Sortable(itensAliadoDropzone, {
-        group: { name: 'itens', put: ['biblioteca'] },
-        animation: 150,
-        onStart: (evt) => handleItemDragStart(itensAliadoDropzone), // Comentário: (Refatoração v3.0.0)
-        onAdd: (evt) => handleItemDrop(evt, 'aliado') // Comentário: (Refatoração v3.0.0)
-    });
+    // Comentário: (CORREÇÃO v3.0.1 - BUG 2) Verificando se a dropzone existe antes de aplicar
+    if (itensAliadoDropzone) {
+        new Sortable(itensAliadoDropzone, {
+            group: { name: 'itens', put: ['biblioteca'] },
+            animation: 150,
+            onStart: (evt) => handleItemDragStart(itensAliadoDropzone), // Comentário: (Refatoração v3.0.0)
+            onAdd: (evt) => handleItemDrop(evt, 'aliado') // Comentário: (Refatoração v3.0.0)
+        });
+    } else {
+        console.error("FALHA CRÍTICA: Dropzone de itens do Aliado NÃO encontrada.");
+    }
 
     // 4. Configuração da Zona do Campeão INIMIGO (NOVO v3.0.0)
     new Sortable(campeaoInimigoDropzone, {
@@ -251,7 +253,7 @@ function setupDragAndDrop() {
     });
 
     // Comentário (Debug): Confirma a finalização da configuração do Sortable.js.
-    console.log("Sortable.js v3.0.0 inicializado.");
+    console.log("Sortable.js v3.0.1 inicializado.");
 }
 
 /**
@@ -319,6 +321,7 @@ function handleItemDragStart(dropzone) {
  */
 function handleItemDrop(evt, target) { // target é 'aliado' ou 'inimigo'
     const el = evt.item; // O clone que foi solto
+    // Comentário: (CORREÇÃO v3.0.1 - BUG 2) A dropzone do aliado agora é 'itens-selecionados-dropzone'
     const dropzone = (target === 'aliado') ? document.getElementById('itens-selecionados-dropzone') : document.getElementById('inimigo-itens-dropzone');
 
     // Comentário (Debug): Rejeita o drop se *não* for um item.
@@ -330,11 +333,16 @@ function handleItemDrop(evt, target) { // target é 'aliado' ou 'inimigo'
 
     // Comentário: Verifica o limite de 6 itens.
     const existingItems = dropzone.querySelectorAll('div[data-id]');
-    if (existingItems.length >= 6) {
+    
+    // ****** INÍCIO DA CORREÇÃO (BUG 3) ******
+    // Comentário: (CORREÇÃO v3.0.1) A lógica era '>= 6', o que rejeitava o 6º item.
+    // Comentário: A lógica correta é '> 6', que rejeita o 7º item.
+    if (existingItems.length > 6) { 
          console.warn(`Rejeitado: Limite de 6 itens atingido para ${target}.`);
          el.parentNode.removeChild(el); // Destrói o clone
          return;
     }
+    // ****** FIM DA CORREÇÃO (BUG 3) ******
 
     // Comentário: Atualiza o array de IDs de itens no estado global.
     const newItemList = Array.from(dropzone.children)
@@ -509,9 +517,8 @@ function createBibliotecaElement(id, type, name, imageUrl) {
     // Comentário: (Otimização v3.0.0)
     // - Removido 'overflow-hidden' para o tooltip funcionar
     // - Adicionado 'group-hover:z-50' para o card pular para frente
-    // - Adicionado 'style.display = 'flex'' para o filtro funcionar
+    // Comentário: (CORREÇÃO v3.0.1 - BUG 1) Removido `style.display = 'flex'`
     div.className = 'w-16 h-16 bg-gray-dark rounded-lg cursor-move p-0 relative group shadow-lg border border-gray-light group-hover:z-50';
-    div.style.display = 'flex'; // Usado pelo filtro
     div.dataset.id = id; // ID (ex: "Aatrox" ou "3031")
     div.dataset.type = type; // 'champion' or 'item' (Usado pelo filtro)
 
@@ -777,9 +784,12 @@ function handleFiltro() {
     // Comentário: Pega todos os elementos arrastáveis na biblioteca.
     const itens = bibliotecaLista.querySelectorAll('div[data-id]'); 
     
-    // Comentário: (Refatoração v3.0.0) O display é 'grid' (definido no HTML),
-    // mas os itens filhos são 'flex'.
-    const displayType = 'flex'; 
+    // ****** INÍCIO DA CORREÇÃO (BUG 1) ******
+    // Comentário: (CORREÇÃO v3.0.1) A biblioteca é um 'grid', 
+    // então os filhos devem ser `display: block` (ou 'grid-item').
+    // 'flex' estava quebrando o layout. 'block' é o padrão do div.
+    const displayType = 'block'; 
+    // ****** FIM DA CORREÇÃO (BUG 1) ******
 
     for (const item of itens) {
         // Comentário: O nome do item está no 'alt' da imagem.
