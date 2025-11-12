@@ -1,14 +1,18 @@
 <!DOCTYPE html>
 <!-- 
-  v5.0.4 - Atualização de Protocolo
+  v5.0.6 (Refatoração de Performance)
   
   PROTOCOLO DE PERFORMANCE (v5.0.4):
   1. Nossa Máxima: Desperdício de energia é fome e desespero.
   2. Tudo deve estar comentado: Para guia, debug e brainstorming.
   3. Repetir 1 e 2.
   
-  MUDANÇA v5.0.3:
-  - Corrigido o bug da biblioteca (v5.0.2) com `removeProperty('display')`.
+  ATUALIZAÇÃO v5.0.6 (Refatoração):
+  - (FOME 1) Movido CSS não-crítico do <head> para o final do <body>.
+  - (FOME 2) Refatorada renderRPGCard() para não usar innerHTML (DOM Thrashing).
+  - (FOME 3) Adicionado Debounce ao filtro da biblioteca (Input Lag).
+  - (FOME 4) Otimizados os listeners de Nível (Recálculo Redundante).
+  - (DESESPERO) Corrigido o bug do D&D (clone vs. cloneNode).
 -->
 <html lang="pt-br">
 <head>
@@ -22,7 +26,7 @@
     <!-- 2. Sortable.js (para Drag-and-Drop) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
 
-    <!-- 3. Fontes (v5.0.0 - Simulação de Fontes da Riot) -->
+    <!-- 3. Fontes (v5.0.0) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Inter:wght@400;600&display=swap" rel="stylesheet">
@@ -33,13 +37,10 @@
             theme: {
                 extend: {
                     fontFamily: {
-                        // Comentário: Cinzel para títulos "Dourados"
                         'display': ['Cinzel', 'serif'], 
-                        // Comentário: Inter (ou Spiegel da Riot) para o corpo
                         'sans': ['Inter', 'sans-serif'], 
                     },
                     colors: {
-                        // Comentário: (v5.0.0) Nova paleta Azul Marinho/Dourado
                         'navy-darkest': '#0A1428',
                         'navy-dark': '#102044',
                         'navy-light': '#1A356E',
@@ -48,7 +49,6 @@
                         'gold-dark': '#B68D40',
                     },
                     boxShadow: {
-                        // Comentário: (v5.0.0) Sombra sutil para os cards
                         'card': '0 4px 15px rgba(0, 0, 0, 0.5)',
                         'inner-light': 'inset 0 1px 2px rgba(255, 255, 255, 0.1)',
                     }
@@ -57,18 +57,201 @@
         }
     </script>
     
-    <!-- 5. Estilos Globais (v5.0.0 - Redesign Azul/Dourado) -->
+    <!-- 5. SCRIPT DE CONEXÃO GOOGLE ADSENSE -->
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6013580497668598"
+         crossorigin="anonymous"></script>
+
+    <!-- 6. ESTILOS CRÍTICOS (Prevenção de FOUC - FOME 1) -->
     <style>
-        /* Comentário: (v5.0.0) Fundo Azul Marinho. 
-           REMOVIDO o `overflow: hidden` do <body> (CORREÇÃO DO BUG D&D) */
+        /* Comentário: Apenas o CSS *essencial* para o layout inicial. */
         body {
             background-color: #0A1428; /* navy-darkest */
             color: #e0e0e0;
             font-family: 'Inter', sans-serif;
-            /* Comentário: Adiciona um fundo sutil (opcional) */
             background-image: radial-gradient(circle at top, rgba(26, 53, 110, 0.3), transparent 60%);
         }
+        .text-gold-metallic {
+            font-family: 'Cinzel', serif;
+            background: linear-gradient(to bottom, #FFF7B2 0%, #D7B66D 50%, #B68D40 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 1px 1px rgba(0, 0, 0, 0.5);
+        }
+    </style>
 
+</head>
+<body class="p-0">
+
+    <!-- AD BANNER TOPO / HEADER (v5.0.0) -->
+    <header id="main-header" class="w-full h-24 header-footer flex items-center justify-between p-4 z-10">
+        
+        <!-- Comentário: Botões de Idioma (i18n) -->
+        <div class="flex gap-2">
+            <button id="lang-br" class="text-2xl opacity-100 hover:opacity-100 transition-opacity duration-200" title="Mudar para Português (BR)">🇧🇷</button>
+            <button id="lang-us" class="text-2xl opacity-50 hover:opacity-100 transition-opacity duration-200" title="Mudar para Inglês (US)">🇺🇸</button>
+        </div>
+
+        <!-- Comentário: AdSense Top Banner -->
+        <div id="adsense-top-banner" class="flex-grow h-full flex items-center justify-center text-gray-500">
+            Espaço para Anúncio (Topo 728x90)
+        </div>
+
+        <!-- Comentário: Exibição da versão do patch -->
+        <div class="w-32 text-right">
+            <span id="patch-version" class="text-xs text-gray-500 font-sans" title="Versão do Data Dragon"></span>
+        </div>
+    </header>
+
+    <!-- ÁREA PRINCIPAL DO APP (v5.0.0) -->
+    <div class="flex-1 grid grid-cols-1 lg:grid-cols-10 gap-4 p-4">
+
+        <!-- COLUNA 1: CAMPEÃO ALIADO (Esquerda) -->
+        <div class="lg:col-span-3 card-navy p-4 rounded-lg flex flex-col h-full overflow-y-auto">
+            <h2 class="text-2xl font-bold text-gold-metallic mb-4 text-center">Aliado</h2>
+            
+            <div class="sub-card-navy rounded-lg p-4 flex gap-4 items-center">
+                <div class="bg-navy-darkest rounded-lg p-[2px] shadow-inner-light">
+                    <div id="campeao-selecionado-dropzone" class="champion-dropzone relative">
+                        <span class="text-center text-xs p-1 absolute inset-0 flex items-center justify-center text-gold-dark">Aliado</span>
+                    </div>
+                </div>
+                <div class="flex-grow">
+                    <h3 id="aliado-champion-name" class="text-lg font-semibold text-white mb-1 h-6 truncate font-display" title="Nome do Campeão"></h3>
+                    <label for="level" class="block text-sm font-medium text-gold-medium font-display">Nível (Aliado)</label>
+                    <input type="number" id="level" name="level" value="1" min="1" max="18"
+                           class="mt-1 block w-full input-navy rounded-lg p-2 font-sans">
+                </div>
+            </div>
+
+            <div class="sub-card-navy rounded-lg p-4 mt-4">
+                <h3 class="text-lg font-semibold text-gray-300 mb-2 font-display">Itens (Aliado)</h3>
+                <div class="grid grid-cols-3 gap-2 justify-items-center">
+                    <div id="aliado-item-slot-0" class="item-slot-placeholder"><span>Slot 1</span></div>
+                    <div id="aliado-item-slot-1" class="item-slot-placeholder"><span>Slot 2</span></div>
+                    <div id="aliado-item-slot-2" class="item-slot-placeholder"><span>Slot 3</span></div>
+                    <div id="aliado-item-slot-3" class="item-slot-placeholder"><span>Slot 4</span></div>
+                    <div id="aliado-item-slot-4" class="item-slot-placeholder"><span>Slot 5</span></div>
+                    <div id="aliado-item-slot-5" class="item-slot-placeholder"><span>Slot 6</span></div>
+                </div>
+            </div>
+
+            <!-- Tabela de Status (Aliado) (Refatorada v5.0.6 - FOME 2) -->
+            <div id="card-rpg" class="mt-4">
+                <h3 class="text-lg font-semibold text-gray-300 mb-2 font-display">Status Totais (Aliado)</h3>
+                <div id="aliado-stats-container" class="sub-card-navy rounded-lg p-4">
+                    <!-- Comentário: Esta tabela agora é estática. O JS apenas atualiza o innerText. -->
+                    <div class="stats-table">
+                        <div class="stat-item"><div class="stat-icon stat-icon-hp"></div><div class="stat-text"><span class="stat-name">HP</span><span id="aliado-stat-hp" class="stat-value">0</span></div></div>
+                        <div class="stat-item"><div class="stat-icon stat-icon-mp"></div><div class="stat-text"><span class="stat-name">MP</span><span id="aliado-stat-mp" class="stat-value">0</span></div></div>
+                        <div class="stat-item"><div class="stat-icon stat-icon-hpregen"></div><div class="stat-text"><span class="stat-name">HP5</span><span id="aliado-stat-hpregen" class="stat-value">0</span></div></div>
+                        <div class="stat-item"><div class="stat-icon stat-icon-mpregen"></div><div class="stat-text"><span class="stat-name">MP5</span><span id="aliado-stat-mpregen" class="stat-value">0</span></div></div>
+                        <div class="stat-item"><div class="stat-icon stat-icon-ad"></div><div class="stat-text"><span class="stat-name">AD</span><span id="aliado-stat-ad" class="stat-value">0</span></div></div>
+                        <div class="stat-item"><div class="stat-icon stat-icon-attackspeed"></div><div class="stat-text"><span class="stat-name">AS</span><span id="aliado-stat-attackspeed" class="stat-value">0</span></div></div>
+                        <div class="stat-item"><div class="stat-icon stat-icon-armor"></div><div class="stat-text"><span class="stat-name">Armor</span><span id="aliado-stat-armor" class="stat-value">0</span></div></div>
+                        <div class="stat-item"><div class="stat-icon stat-icon-spellblock"></div><div class="stat-text"><span class="stat-name">MR</span><span id="aliado-stat-spellblock" class="stat-value">0</span></div></div>
+                        <div class="stat-item"><div class="stat-icon stat-icon-crit"></div><div class="stat-text"><span class="stat-name">Crit %</span><span id="aliado-stat-crit" class="stat-value">0</span></div></div>
+                        <div class="stat-item"><div class="stat-icon stat-icon-movespeed"></div><div class="stat-text"><span class="stat-name">MS</span><span id="aliado-stat-movespeed" class="stat-value">0</span></div></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bloco de DPS -->
+            <div class="mt-4 text-center">
+                <h2 class="text-2xl font-bold text-gold-metallic mb-4">DPS (AA)</h2>
+                <div class="dps-circle rounded-full w-48 h-48 flex items-center justify-center mx-auto">
+                    <span id="resultado-dps" class="text-6xl font-bold text-white font-sans">0</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- COLUNA 2: BIBLIOTECA (Meio) -->
+        <div class="lg:col-span-4 card-navy p-4 rounded-lg flex flex-col h-full">
+            <h2 class="text-2xl font-bold text-gold-metallic mb-4 text-center">Biblioteca</h2>
+            
+            <div class="mb-4 border-b border-gold-dark border-opacity-30">
+                <button id="tab-campeoes" class="tab-button-active-gold px-4 py-2">Campeões</button>
+                <button id="tab-itens" class="tab-button-gold px-4 py-2">Itens</button>
+            </div>
+
+            <div class="mb-4">
+                <input type="text" id="filtro-biblioteca" placeholder="Filtrar por nome..."
+                       class="w-full input-navy rounded-lg p-2 font-sans">
+            </div>
+            
+            <div id="biblioteca-lista" class="sub-card-navy grid grid-cols-4 gap-2 overflow-y-auto h-[344px] p-2 rounded-lg content-start justify-items-center">
+                <!-- Placeholders (serão substituídos via JS) -->
+                <div class="w-20 h-20 input-navy rounded-lg animate-pulse"></div>
+            </div>
+
+            <div class="mt-4 flex-1 flex flex-col">
+                <h3 class="text-lg font-semibold text-gray-300 mb-2 font-display">Receita do Item</h3>
+                <div id="receita-bloco" class="sub-card-navy rounded-lg p-4 min-h-[100px] flex-1 flex items-center justify-center gap-2">
+                    <span class="text-gray-500">Clique em um item da biblioteca para ver sua receita.</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- COLUNA 3: CAMPEÃO INIMIGO (Direita) -->
+        <div class="lg:col-span-3 card-navy p-4 rounded-lg flex flex-col h-full overflow-y-auto">
+            <h2 class="text-2xl font-bold text-gold-metallic mb-4 text-center">Inimigo</h2>
+
+            <div class="sub-card-navy rounded-lg p-4 flex gap-4 items-center">
+                <div class="bg-navy-darkest rounded-lg p-[2px] shadow-inner-light">
+                    <div id="inimigo-selecionado-dropzone" class="champion-dropzone relative">
+                        <span class="text-center text-xs p-1 absolute inset-0 flex items-center justify-center text-gold-dark">Inimigo</span>
+                    </div>
+                </div>
+                <div class="flex-grow">
+                    <h3 id="inimigo-champion-name" class="text-lg font-semibold text-white mb-1 h-6 truncate font-display" title="Nome do Campeão"></h3>
+                    <label for="enemy-level" class="block text-sm font-medium text-gold-medium font-display">Nível (Inimigo)</label>
+                    <input type="number" id="enemy-level" name="enemy-level" value="1" min="1" max="18"
+                           class="mt-1 block w-full input-navy rounded-lg p-2 font-sans">
+                </div>
+            </div>
+
+            <div class="sub-card-navy rounded-lg p-4 mt-4">
+                <h3 class="text-lg font-semibold text-gray-300 mb-2 font-display">Itens (Inimigo)</h3>
+                <div class="grid grid-cols-3 gap-2 justify-items-center">
+                    <div id="inimigo-item-slot-0" class="item-slot-placeholder"><span>Slot 1</span></div>
+                    <div id="inimigo-item-slot-1" class="item-slot-placeholder"><span>Slot 2</span></div>
+                    <div id="inimigo-item-slot-2" class="item-slot-placeholder"><span>Slot 3</span></div>
+                    <div id="inimigo-item-slot-3" class="item-slot-placeholder"><span>Slot 4</span></div>
+                    <div id="inimigo-item-slot-4" class="item-slot-placeholder"><span>Slot 5</span></div>
+                    <div id="inimigo-item-slot-5" class="item-slot-placeholder"><span>Slot 6</span></div>
+                </div>
+            </div>
+
+            <!-- Tabela de Status (Inimigo) (Refatorada v5.0.6 - FOME 2) -->
+            <div id="card-rpg-inimigo" class.="mt-4">
+                <h3 class="text-lg font-semibold text-gray-300 mb-2 font-display">Status Totais (Inimigo)</h3>
+                <div id="inimigo-stats-container" class="sub-card-navy rounded-lg p-4">
+                    <!-- Comentário: Esta tabela agora é estática. O JS apenas atualiza o innerText. -->
+                    <div class="stats-table">
+                        <div class="stat-item"><div class="stat-icon stat-icon-hp"></div><div class="stat-text"><span class="stat-name">HP</span><span id="inimigo-stat-hp" class="stat-value">0</span></div></div>
+                        <div class="stat-item"><div class="stat-icon stat-icon-mp"></div><div class="stat-text"><span class="stat-name">MP</span><span id="inimigo-stat-mp" class="stat-value">0</span></div></div>
+                        <div class="stat-item"><div class="stat-icon stat-icon-hpregen"></div><div class="stat-text"><span class="stat-name">HP5</span><span id="inimigo-stat-hpregen" class="stat-value">0</span></div></div>
+                        <div class="stat-item"><div class="stat-icon stat-icon-mpregen"></div><div class="stat-text"><span class="stat-name">MP5</span><span id="inimigo-stat-mpregen" class="stat-value">0</span></div></div>
+                        <div class="stat-item"><div class="stat-icon stat-icon-ad"></div><div class="stat-text"><span class="stat-name">AD</span><span id="inimigo-stat-ad" class="stat-value">0</span></div></div>
+                        <div class="stat-item"><div class="stat-icon stat-icon-attackspeed"></div><div class="stat-text"><span class="stat-name">AS</span><span id="inimigo-stat-attackspeed" class="stat-value">0</span></div></div>
+                        <div class="stat-item"><div class="stat-icon stat-icon-armor"></div><div class="stat-text"><span class="stat-name">Armor</span><span id="inimigo-stat-armor" class="stat-value">0</span></div></div>
+                        <div class="stat-item"><div class="stat-icon stat-icon-spellblock"></div><div class="stat-text"><span class="stat-name">MR</span><span id="inimigo-stat-spellblock" class="stat-value">0</span></div></div>
+                        <div class="stat-item"><div class="stat-icon stat-icon-crit"></div><div class="stat-text"><span class="stat-name">Crit %</span><span id="inimigo-stat-crit" class="stat-value">0</span></div></div>
+                        <div class="stat-item"><div class="stat-icon stat-icon-movespeed"></div><div class="stat-text"><span class="stat-name">MS</span><span id="inimigo-stat-movespeed" class="stat-value">0</span></div></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- AD BANNER RODAPÉ (v5.0.0) -->
+    <footer id="adsense-bottom-banner" class="w-full h-24 header-footer flex items-center justify-center text-gray-500 z-10">
+        <!-- Comentário: Unidade de Anúncio Horizontal (ex: 728x90) deve ser inserida aqui -->
+        Espaço para Anúncio (Rodapé 728x90)
+    </footer>
+    
+    <!-- 7. ESTILOS NÃO-CRÍTICOS (Movidos para o final - FOME 1) -->
+    <style>
         /* Custom Scrollbar */
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-track { background: #102044; border-radius: 10px; }
@@ -84,7 +267,6 @@
 
         /* --- (v5.0.0) Redesign Azul/Dourado --- */
         .header-footer {
-            /* Comentário: Degradê sutil para luz/sombra */
             background: linear-gradient(to bottom, #1A356E, #102044);
             border-bottom: 2px solid #D7B66D;
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
@@ -111,7 +293,6 @@
             outline: none;
         }
 
-        /* Comentário: (v5.0.0) Novo estilo de abas Douradas */
         .tab-button-gold {
             background-color: transparent;
             color: rgba(255, 255, 255, 0.5);
@@ -149,17 +330,6 @@
             box-shadow: 0 0 15px #D7B66D, inset 0 0 10px rgba(215, 182, 109, 0.5);
         }
         
-        /* Comentário: (v5.0.0) Texto Dourado Metálico para Títulos */
-        .text-gold-metallic {
-            font-family: 'Cinzel', serif;
-            /* Comentário: Efeito de degradê para simular metal */
-            background: linear-gradient(to bottom, #FFF7B2 0%, #D7B66D 50%, #B68D40 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            /* Comentário: Sombra sutil para dar profundidade */
-            text-shadow: 0 1px 1px rgba(0, 0, 0, 0.5);
-        }
-
         /* --- (v4.1.0) Estilos de Layout (Slots e Stats) --- */
 
         .item-slot-placeholder {
@@ -245,176 +415,6 @@
         .stat-icon-movespeed { background-position: -216px 0; }
 
     </style>
-
-    <!-- 5. SCRIPT DE CONEXÃO GOOGLE ADSENSE -->
-    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6013580497668598"
-         crossorigin="anonymous"></script>
-
-</head>
-<body class="p-0">
-
-    <!-- AD BANNER TOPO / HEADER (v5.0.0) -->
-    <header id="main-header" class="w-full h-24 header-footer flex items-center justify-between p-4 z-10">
-        
-        <!-- Comentário: Botões de Idioma (i18n) -->
-        <div class="flex gap-2">
-            <button id="lang-br" class="text-2xl opacity-100 hover:opacity-100 transition-opacity duration-200" title="Mudar para Português (BR)">🇧🇷</button>
-            <button id="lang-us" class="text-2xl opacity-50 hover:opacity-100 transition-opacity duration-200" title="Mudar para Inglês (US)">🇺🇸</button>
-        </div>
-
-        <!-- Comentário: AdSense Top Banner -->
-        <div id="adsense-top-banner" class="flex-grow h-full flex items-center justify-center text-gray-500">
-            Espaço para Anúncio (Topo 728x90)
-        </div>
-
-        <!-- Comentário: Exibição da versão do patch -->
-        <div class="w-32 text-right">
-            <span id="patch-version" class="text-xs text-gray-500 font-sans" title="Versão do Data Dragon"></span>
-        </div>
-    </header>
-
-    <!-- ÁREA PRINCIPAL DO APP (v5.0.0) 
-         Comentário: O layout de 10 colunas (3-4-3) foi mantido.
-    -->
-    <div class="flex-1 grid grid-cols-1 lg:grid-cols-10 gap-4 p-4">
-
-        <!-- COLUNA 1: CAMPEÃO ALIADO (Esquerda) -->
-        <!-- Comentário: Adicionado `h-full` e `overflow-y-auto` para o scroll da coluna -->
-        <div class="lg:col-span-3 card-navy p-4 rounded-lg flex flex-col h-full overflow-y-auto">
-            <h2 class="text-2xl font-bold text-gold-metallic mb-4 text-center">Aliado</h2>
-            
-            <!-- Agrupamento de Campeão e Nível -->
-            <div class="sub-card-navy rounded-lg p-4 flex gap-4 items-center">
-                <!-- Comentário: Dropzone 80x80px (w-20 h-20) -->
-                <div class="bg-navy-darkest rounded-lg p-[2px] shadow-inner-light">
-                    <div id="campeao-selecionado-dropzone" class="champion-dropzone relative">
-                        <span class="text-center text-xs p-1 absolute inset-0 flex items-center justify-center text-gold-dark">Aliado</span>
-                    </div>
-                </div>
-                <!-- Nível e Nome -->
-                <div class="flex-grow">
-                    <h3 id="aliado-champion-name" class="text-lg font-semibold text-white mb-1 h-6 truncate font-display" title="Nome do Campeão"></h3>
-                    
-                    <label for="level" class="block text-sm font-medium text-gold-medium font-display">Nível (Aliado)</label>
-                    <input type="number" id="level" name="level" value="1" min="1" max="18"
-                           class="mt-1 block w-full input-navy rounded-lg p-2 font-sans">
-                </div>
-            </div>
-
-            <!-- Bloco de Itens Estático (Aliado) -->
-            <div class="sub-card-navy rounded-lg p-4 mt-4">
-                <h3 class="text-lg font-semibold text-gray-300 mb-2 font-display">Itens (Aliado)</h3>
-                <div class="grid grid-cols-3 gap-2 justify-items-center">
-                    <div id="aliado-item-slot-0" class="item-slot-placeholder"><span>Slot 1</span></div>
-                    <div id="aliado-item-slot-1" class="item-slot-placeholder"><span>Slot 2</span></div>
-                    <div id="aliado-item-slot-2" class="item-slot-placeholder"><span>Slot 3</span></div>
-                    <div id="aliado-item-slot-3" class="item-slot-placeholder"><span>Slot 4</span></div>
-                    <div id="aliado-item-slot-4" class="item-slot-placeholder"><span>Slot 5</span></div>
-                    <div id="aliado-item-slot-5" class="item-slot-placeholder"><span>Slot 6</span></div>
-                </div>
-            </div>
-
-            <!-- Tabela de Status (Aliado) -->
-            <div id="card-rpg" class="mt-4">
-                <h3 class="text-lg font-semibold text-gray-300 mb-2 font-display">Status Totais (Aliado)</h3>
-                <div id="aliado-stats-container" class="sub-card-navy rounded-lg p-4">
-                    <span class="text-gray-500 text-sm">Selecione um Campeão</span>
-                </div>
-            </div>
-
-            <!-- Bloco de DPS -->
-            <div class="mt-4 text-center">
-                <h2 class="text-2xl font-bold text-gold-metallic mb-4">DPS (AA)</h2>
-                <div class="dps-circle rounded-full w-48 h-48 flex items-center justify-center mx-auto">
-                    <span id="resultado-dps" class="text-6xl font-bold text-white font-sans">0</span>
-                </div>
-            </div>
-        </div>
-
-        <!-- COLUNA 2: BIBLIOTECA (Meio) -->
-        <!-- Comentário: Adicionado `h-full` e `overflow-y-auto` para o scroll da coluna -->
-        <div class="lg:col-span-4 card-navy p-4 rounded-lg flex flex-col h-full">
-            <h2 class="text-2xl font-bold text-gold-metallic mb-4 text-center">Biblioteca</h2>
-            
-            <!-- Abas (v5.0.0) -->
-            <div class="mb-4 border-b border-gold-dark border-opacity-30">
-                <button id="tab-campeoes" class="tab-button-active-gold px-4 py-2">Campeões</button>
-                <button id="tab-itens" class="tab-button-gold px-4 py-2">Itens</button>
-            </div>
-
-            <!-- Filtro (v5.0.0) -->
-            <div class="mb-4">
-                <input type="text" id="filtro-biblioteca" placeholder="Filtrar por nome..."
-                       class="w-full input-navy rounded-lg p-2 font-sans">
-            </div>
-            
-            <!-- Área da Biblioteca (Scroll 4x4) (v3.2.0) -->
-            <div id="biblioteca-lista" class="sub-card-navy grid grid-cols-4 gap-2 overflow-y-auto h-[344px] p-2 rounded-lg content-start justify-items-center">
-                <!-- Placeholders (serão substituídos via JS) -->
-                <div class="w-20 h-20 input-navy rounded-lg animate-pulse"></div>
-            </div>
-
-            <!-- Bloco de Receita (v3.0.0) -->
-            <div class="mt-4 flex-1 flex flex-col">
-                <h3 class="text-lg font-semibold text-gray-300 mb-2 font-display">Receita do Item</h3>
-                <!-- Este bloco será populado pelo app.js ao clicar em um item -->
-                <div id="receita-bloco" class="sub-card-navy rounded-lg p-4 min-h-[100px] flex-1 flex items-center justify-center gap-2">
-                    <span class="text-gray-500">Clique em um item da biblioteca para ver sua receita.</span>
-                </div>
-            </div>
-        </div>
-
-        <!-- COLUNA 3: CAMPEÃO INIMIGO (Direita) -->
-        <!-- Comentário: Adicionado `h-full` e `overflow-y-auto` para o scroll da coluna -->
-        <div class="lg:col-span-3 card-navy p-4 rounded-lg flex flex-col h-full overflow-y-auto">
-            <h2 class="text-2xl font-bold text-gold-metallic mb-4 text-center">Inimigo</h2>
-
-            <!-- Campeão Inimigo (v3.0.0) -->
-            <div class="sub-card-navy rounded-lg p-4 flex gap-4 items-center">
-                <div class="bg-navy-darkest rounded-lg p-[2px] shadow-inner-light">
-                    <div id="inimigo-selecionado-dropzone" class="champion-dropzone relative">
-                        <span class="text-center text-xs p-1 absolute inset-0 flex items-center justify-center text-gold-dark">Inimigo</span>
-                    </div>
-                </div>
-                <!-- Nível e Nome -->
-                <div class="flex-grow">
-                    <h3 id="inimigo-champion-name" class="text-lg font-semibold text-white mb-1 h-6 truncate font-display" title="Nome do Campeão"></h3>
-                    
-                    <label for="enemy-level" class="block text-sm font-medium text-gold-medium font-display">Nível (Inimigo)</label>
-                    <input type="number" id="enemy-level" name="enemy-level" value="1" min="1" max="18"
-                           class="mt-1 block w-full input-navy rounded-lg p-2 font-sans">
-                </div>
-            </div>
-
-            <!-- Bloco de Itens Estático (Inimigo) -->
-            <div class="sub-card-navy rounded-lg p-4 mt-4">
-                <h3 class="text-lg font-semibold text-gray-300 mb-2 font-display">Itens (Inimigo)</h3>
-                <div class="grid grid-cols-3 gap-2 justify-items-center">
-                    <div id="inimigo-item-slot-0" class="item-slot-placeholder"><span>Slot 1</span></div>
-                    <div id="inimigo-item-slot-1" class="item-slot-placeholder"><span>Slot 2</span></div>
-                    <div id="inimigo-item-slot-2" class="item-slot-placeholder"><span>Slot 3</span></div>
-                    <div id="inimigo-item-slot-3" class="item-slot-placeholder"><span>Slot 4</span></div>
-                    <div id="inimigo-item-slot-4" class="item-slot-placeholder"><span>Slot 5</span></div>
-                    <div id="inimigo-item-slot-5" class="item-slot-placeholder"><span>Slot 6</span></div>
-                </div>
-            </div>
-
-            <!-- Tabela de Status (Inimigo) -->
-            <div id="card-rpg-inimigo" class.="mt-4">
-                <h3 class="text-lg font-semibold text-gray-300 mb-2 font-display">Status Totais (Inimigo)</h3>
-                <div id="inimigo-stats-container" class="sub-card-navy rounded-lg p-4">
-                    <span class="text-gray-500 text-sm">Selecione um Inimigo</span>
-                </div>
-            </div>
-        </div>
-
-    </div>
-
-    <!-- AD BANNER RODAPÉ (v5.0.0) -->
-    <footer id="adsense-bottom-banner" class="w-full h-24 header-footer flex items-center justify-center text-gray-500 z-10">
-        <!-- Comentário: Unidade de Anúncio Horizontal (ex: 728x90) deve ser inserida aqui -->
-        Espaço para Anúncio (Rodapé 728x90)
-    </footer>
     
     <!-- Cérebro da Aplicação -->
     <script src="app.js"></script>
