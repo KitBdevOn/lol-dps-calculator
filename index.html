@@ -85,11 +85,13 @@
     </header>
 
     <!-- ÁREA PRINCIPAL DO APP (flex-1 para preencher o espaço) -->
-    <!-- Comentário: (Refatoração v2.1.0) Trocado para grid-cols-6 para melhor distribuição -->
-    <div class="flex-1 grid grid-cols-1 lg:grid-cols-6 gap-4 p-4 overflow-hidden">
+    <!-- Comentário: (Refatoração v2.1.1 - CORREÇÃO DE OVERFLOW) -->
+    <!-- Adicionado 'min-h-0' para forçar o flex-1 a respeitar o limite de altura -->
+    <!-- Isso previne que as colunas internas transbordem para trás do footer -->
+    <div class="flex-1 grid grid-cols-1 lg:grid-cols-6 gap-4 p-4 overflow-hidden min-h-0">
 
         <!-- COLUNA 1: Biblioteca (Campeões e Itens) -->
-        <!-- Comentário: (Refatoração v2.1.0) Expandido para col-span-2 (33%) para caber 4+ colunas de campeões -->
+        <!-- Comentário: (Refatoração v2.1.0) Expandido para col-span-2 (33%) -->
         <div class="lg:col-span-2 bg-gray-darkest p-4 rounded-lg shadow-lg flex flex-col h-full">
             <h2 class="text-2xl font-bold text-neon-green mb-4">Biblioteca</h2>
             
@@ -107,15 +109,19 @@
             </div>
             
             <!-- Área de Itens/Campeões (para popular com JS) -->
-            <!-- Comentário: A largura extra (col-span-2) fará o 'flex-wrap' criar 4+ colunas automaticamente -->
-            <div id="biblioteca-lista" class="flex flex-wrap gap-2 overflow-y-auto h-full p-2 bg-gray-dark rounded-b-lg rounded-tr-lg justify-start content-start">
+            <!-- Comentário: (Refatoração v2.1.1 - CORREÇÃO DE OVERFLOW) -->
+            <!-- Trocado 'h-full' por 'flex-1' -->
+            <!-- 'flex-1' faz este bloco ocupar o *espaço restante* no flex-col pai -->
+            <!-- Isso permite que o 'overflow-y-auto' funcione corretamente (O SCROLL) -->
+            <div id="biblioteca-lista" class="flex flex-wrap gap-2 overflow-y-auto flex-1 p-2 bg-gray-dark rounded-b-lg rounded-tr-lg justify-start content-start">
                 <!-- Comentário: Placeholders são substituídos pelo app.js -->
                 <div class="w-16 h-16 bg-gray-light rounded-lg animate-pulse"></div>
             </div>
         </div>
 
         <!-- COLUNA 2: Card Ativo (Cálculos) -->
-        <!-- Comentário: (Refatoração v2.1.0) Expandido para col-span-3 (50%) para ser a área de trabalho principal -->
+        <!-- Comentário: (Refatoração v2.1.0) Expandido para col-span-3 (50%) -->
+        <!-- Comentário: (Refatoração v2.1.1) Adicionado 'h-full' que faltava para consistência -->
         <div class="lg:col-span-3 bg-gray-darkest p-4 rounded-lg shadow-lg flex flex-col h-full overflow-y-auto">
             
             <!-- Comentário: Nova estrutura de layout (Tarefas 3, 5) -->
@@ -184,7 +190,9 @@
         </div>
 
         <!-- COLUNA 3: DPS e Anúncios (Conjunção) -->
-        <!-- Comentário: (Refatoração v2.1.0) Reduzido para col-span-1 (16.6%) e empilhado (DPS + Ad) -->
+        <!-- Comentário: (Refatoração v2.1.0) Reduzido para col-span-1 (16.6%) -->
+        <!-- Comentário: (Refatoração v2.1.1) A coluna inteira (h-full + overflow-y-auto) -->
+        <!-- garante o scroll interno se o AD for muito alto. -->
         <div class="lg:col-span-1 bg-gray-darkest p-4 rounded-lg shadow-lg flex flex-col h-full items-center justify-start text-center overflow-y-auto">
             <!-- DPS -->
             <h2 class="text-2xl font-bold text-neon-green mb-4">DPS (AA)</h2>
