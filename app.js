@@ -1,5 +1,5 @@
 /**
- * app.js v3.1.0 (Otimização de Layout e Correção de Bugs)
+ * app.js v4.0.0 (Redesign "Glassmorphism")
  * Cérebro central da Calculadora de DPS.
  * Gerencia a busca de dados, a interface (D&D) e os cálculos.
  *
@@ -7,11 +7,11 @@
  * 1. Nossa Máxima: Desperdício de energia é fome e desespero.
  * 2. Tudo deve estar comentado: Para guia, debug e brainstorming.
  *
- * ATUALIZAÇÃO v3.1.0 (Correção e Otimização):
- * - (BUG 1 - Imagem Some) CSS no index.html força o item 100% w/h na dropzone.
- * - (BUG 2 - Layout Biblioteca) Biblioteca agora é 4 colunas.
- * - (BUG 2 - Layout Ícones) Ícones aumentados para 80x80px (w-20 h-20)
- * - (BUG 3 - Patch) Versão do Patch agora é exibida no header (puxado do DDragonData)
+ * ATUALIZAÇÃO v4.0.0 (Redesign):
+ * - (CSS) `index.html` agora usa classes "glass-" para o layout.
+ * - (JS) `switchTab()` atualizado para usar classes `.tab-button` e `.tab-button-active`.
+ * - (JS) `createBibliotecaElement()` atualizado para usar classe `.biblioteca-item`.
+ * - (JS) `showRecipe()` atualizado para usar classe `.biblioteca-item`.
  */
 
 // --- Estado Global da Aplicação ---
@@ -50,14 +50,14 @@ document.addEventListener('DOMContentLoaded', init);
  */
 function init() {
     // Comentário (Debug): Confirma que o JS foi carregado e está executando.
-    console.log("Cérebro carregado. Iniciando protocolo de sobrevivência. Layout v3.1.0 (Otimizado) ativo.");
+    console.log("Cérebro carregado. Iniciando protocolo de sobrevivência. Layout v4.0.0 (Glassmorphism) ativo.");
     
-    // --- (CORREÇÃO v3.1.0 - BUG 3) Exibe a Versão do Patch ---
+    // --- (v3.1.0) Exibe a Versão do Patch ---
     const patchVersionEl = document.getElementById('patch-version');
     if (patchVersionEl) {
         patchVersionEl.innerText = `Patch: ${DDragonData.version}`;
     }
-    // --- FIM DA CORREÇÃO ---
+    // --- FIM DA LÓGICA DO PATCH ---
 
     // --- LÓGICA DE IDIOMA (i18n) ---
     // Comentário: Adiciona listeners aos botões de bandeira.
@@ -97,6 +97,7 @@ function init() {
 
 /**
  * (TAREFA 2) Troca a aba ativa da biblioteca (Campeões/Itens)
+ * (ATUALIZADO v4.0.0)
  */
 function switchTab(tabName) {
     // Comentário (Debug): Registra a troca de aba.
@@ -107,21 +108,21 @@ function switchTab(tabName) {
     const tabCampeoes = document.getElementById('tab-campeoes');
     const tabItens = document.getElementById('tab-itens');
 
-    // Comentário: Lógica para atualizar a estilização (aparência) das abas.
+    // Comentário: (v4.0.0) Lógica atualizada para usar classes de "vidro"
     if (tabName === 'champion') {
         // Ativa Campeões
-        tabCampeoes.classList.add('bg-gray-light', 'text-neon-green');
-        tabCampeoes.classList.remove('bg-gray-dark', 'text-gray-500', 'opacity-50');
+        tabCampeoes.classList.add('tab-button-active');
+        tabCampeoes.classList.remove('tab-button');
         // Desativa Itens
-        tabItens.classList.add('bg-gray-dark', 'text-gray-500', 'opacity-50');
-        tabItens.classList.remove('bg-gray-light', 'text-neon-green');
+        tabItens.classList.add('tab-button');
+        tabItens.classList.remove('tab-button-active');
     } else {
         // Ativa Itens
-        tabItens.classList.add('bg-gray-light', 'text-neon-green');
-        tabItens.classList.remove('bg-gray-dark', 'text-gray-500', 'opacity-50');
+        tabItens.classList.add('tab-button-active');
+        tabItens.classList.remove('tab-button');
         // Desativa Campeões
-        tabCampeoes.classList.add('bg-gray-dark', 'text-gray-500', 'opacity-50');
-        tabCampeoes.classList.remove('bg-gray-light', 'text-neon-green');
+        tabCampeoes.classList.add('tab-button');
+        tabCampeoes.classList.remove('tab-button-active');
     }
 
     // Comentário: Chama handleFiltro() para re-filtrar a lista com a nova aba.
@@ -206,7 +207,7 @@ function clearDropZone(zoneId, isItemZone = false) {
  */
 function setupDragAndDrop() {
     // Comentário (Debug): Confirma que as zonas D&D estão sendo configuradas.
-    console.log("Configurando zonas D&D (v3.1.0)...");
+    console.log("Configurando zonas D&D (v4.0.0)...");
 
     // Comentário: Referências de UI
     const bibliotecaLista = document.getElementById('biblioteca-lista');
@@ -259,7 +260,7 @@ function setupDragAndDrop() {
     });
 
     // Comentário (Debug): Confirma a finalização da configuração do Sortable.js.
-    console.log("Sortable.js v3.1.0 inicializado.");
+    console.log("Sortable.js v4.0.0 inicializado.");
 }
 
 /**
@@ -340,8 +341,6 @@ function handleItemDrop(evt, target) { // target é 'aliado' ou 'inimigo'
     const existingItems = dropzone.querySelectorAll('div[data-id]');
     
     // Comentário: (CORREÇÃO v3.0.1 - BUG 3) Lógica corrigida para permitir 6 itens.
-    // 'existingItems.length' *ainda não* inclui o item que está sendo solto (el).
-    // Então, se o length for 6, o 'el' seria o 7º.
     if (existingItems.length >= 6) { 
          console.warn(`Rejeitado: Limite de 6 itens atingido para ${target}.`);
          el.parentNode.removeChild(el); // Destrói o clone
@@ -349,7 +348,6 @@ function handleItemDrop(evt, target) { // target é 'aliado' ou 'inimigo'
     }
 
     // Comentário: Atualiza o array de IDs de itens no estado global.
-    // Usamos 'dropzone.children' que *inclui* o 'el' que acabou de ser solto.
     const newItemList = Array.from(dropzone.children)
                              .map(child => child.dataset.id)
                              .filter(id => id); // Filtra IDs nulos
@@ -516,11 +514,12 @@ function populateBiblioteca(championData, itemData) {
 /**
  * Helper para criar um elemento arrastável para a biblioteca
  * (Função auxiliar de renderização)
+ * (ATUALIZADO v4.0.0)
  */
 function createBibliotecaElement(id, type, name, imageUrl) {
     const div = document.createElement('div');
-    // Comentário: (CORREÇÃO v3.1.0 - BUG 2) Ícones aumentados para w-20 h-20 (80px)
-    div.className = 'w-20 h-20 bg-gray-dark rounded-lg cursor-move p-0 relative group shadow-lg border border-gray-light group-hover:z-50';
+    // Comentário: (v4.0.0) Usa a nova classe de "vidro" e mantém os tamanhos (v3.1.0)
+    div.className = 'biblioteca-item w-20 h-20 rounded-lg cursor-move p-0 relative group group-hover:z-50';
     div.dataset.id = id; // ID (ex: "Aatrox" ou "3031")
     div.dataset.type = type; // 'champion' or 'item' (Usado pelo filtro)
 
@@ -530,11 +529,10 @@ function createBibliotecaElement(id, type, name, imageUrl) {
     img.className = "w-full h-full object-cover transition-transform duration-200 group-hover:scale-110 rounded-lg";
     img.draggable = false; // Previne o "ghost image" padrão do HTML5
 
-    // Comentário: (Otimização v3.0.0) Tooltip (Nome)
+    // Comentário: (v4.0.0) Tooltip de "vidro"
     const nameOverlay = document.createElement('span');
     nameOverlay.innerText = name;
-    // Comentário: (CORREÇÃO v3.1.0) O tooltip não é mais 'truncate' para nomes longos
-    nameOverlay.className = "absolute bottom-0 left-0 w-auto min-w-full bg-black bg-opacity-70 text-white text-xs text-center p-1 transition-opacity duration-200 opacity-0 group-hover:opacity-100 rounded-b-lg z-10";
+    nameOverlay.className = "item-tooltip absolute bottom-0 left-0 w-auto min-w-full text-white text-xs text-center p-1 transition-opacity duration-200 opacity-0 group-hover:opacity-100 rounded-b-lg z-10";
 
     div.appendChild(img);
     div.appendChild(nameOverlay);
@@ -547,6 +545,7 @@ function createBibliotecaElement(id, type, name, imageUrl) {
 
 /**
  * (NOVO v3.0.0) Mostra a receita de um item clicado
+ * (ATUALIZADO v4.0.0)
  */
 function showRecipe(id, type) {
     const receitaBloco = document.getElementById('receita-bloco');
@@ -571,13 +570,12 @@ function showRecipe(id, type) {
     
     // Comentário: Itera sobre os IDs dos sub-itens
     item.from.forEach(subItemId => {
-        const subItem = DDragonData.itemData[subItemId];
+        const subItem = DDragonData.subItemId];
         if (!subItem) return;
 
-        // Comentário: Cria o elemento visual para o sub-item
-        // Comentário: (CORREÇÃO v3.1.0) Ícones da receita aumentados para 64px
+        // Comentário: (v4.0.0) Reutiliza a classe .biblioteca-item (64x64)
         const div = document.createElement('div');
-        div.className = 'w-16 h-16 bg-gray-darkest rounded-lg relative group border border-gray-light';
+        div.className = 'biblioteca-item w-16 h-16 rounded-lg relative group';
         div.title = `${subItem.name} (${subItem.gold.total}G)`; // Tooltip nativo
 
         const img = document.createElement('img');
