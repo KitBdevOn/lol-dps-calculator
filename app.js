@@ -1,5 +1,5 @@
 /**
- * app.js v4.1.0 (Refatoração Crítica de Bugs e UI)
+ * app.js v4.1.1 (Hotfix D&D Clone)
  * Cérebro central da Calculadora de DPS.
  * Gerencia a busca de dados, a interface (D&D) e os cálculos.
  *
@@ -7,7 +7,10 @@
  * 1. Nossa Máxima: Desperdício de energia é fome e desespero.
  * 2. Tudo deve estar comentado: Para guia, debug e brainstorming.
  *
- * ATUALIZAÇÃO v4.1.0 (Refatoração Crítica):
+ * ATUALIZAÇÃO v4.1.1 (Hotfix):
+ * - (BUG D&D) Corrigido bug onde o clone (imagem arrastada) sumia.
+ * - (CAUSA) O `overflow: hidden` do layout `v4.0.0` estava clipando o clone.
+ * - (SOLUÇÃO) Adicionado `fallbackOnBody: true` na instância Sortable da Biblioteca.
  * - (BUG 1 - Campeão) Corrigido bug de drop e adicionado nome do campeão.
  * - (BUG 2 - Itens) Lógica de D&D reescrita para 12 slots estáticos (6 Aliado, 6 Inimigo).
  * - (BUG 2 - Itens) Corrigido bug que limitava a 5 itens (agora 6).
@@ -48,7 +51,7 @@ let currentState = {
  */
 function init() {
     // Comentário (Debug): Confirma que o JS foi carregado e está executando.
-    console.log("Cérebro carregado. Iniciando protocolo de sobrevivência. Layout v4.1.0 (Refatoração Crítica) ativo.");
+    console.log("Cérebro carregado. Iniciando protocolo de sobrevivência. Layout v4.1.1 (Hotfix D&D) ativo.");
     
     // --- (v3.1.0) Exibe a Versão do Patch ---
     const patchVersionEl = document.getElementById('patch-version');
@@ -172,6 +175,11 @@ function clearDropZone(zoneId) {
     // Comentário: Mostra o placeholder de campeão
     const placeholderText = dropzone.querySelector('span');
     if (placeholderText) placeholderText.style.display = 'flex';
+
+    // Comentário: (v4.1.1) Limpa o nome do campeão
+    const target = (zoneId === 'campeao-selecionado-dropzone') ? 'aliado' : 'inimigo';
+    const nameEl = (target === 'aliado') ? document.getElementById('aliado-champion-name') : document.getElementById('inimigo-champion-name');
+    if (nameEl) nameEl.innerText = ''; // Limpa o nome
 }
 
 /**
@@ -193,10 +201,10 @@ function clearItemSlot(target, slotIndex) {
 
 
 /**
- * (Refatorado v4.1.0 - BUG 2) Configura as 14 zonas de Drag-and-Drop
+ * (Refatorado v4.1.1 - Hotfix D&D) Configura as 14 zonas de Drag-and-Drop
  */
 function setupDragAndDrop() {
-    console.log("Configurando zonas D&D (v4.1.0 - Estático)...");
+    console.log("Configurando zonas D&D (v4.1.1 - Estático, Hotfix)...");
 
     const bibliotecaLista = document.getElementById('biblioteca-lista');
     
@@ -204,7 +212,13 @@ function setupDragAndDrop() {
     new Sortable(bibliotecaLista, {
         group: { name: 'biblioteca', pull: 'clone', put: false },
         animation: 150,
-        sort: false
+        sort: false,
+        // --- (CORREÇÃO v4.1.1 - BUG D&D) ---
+        // Comentário: Força o clone a ser anexado ao <body>.
+        // Isso previne que o `overflow: hidden` dos pais (como a própria
+        // biblioteca ou o card) corte/esconda o ícone que está sendo arrastado.
+        fallbackOnBody: true
+        // --- FIM DA CORREÇÃO ---
     });
 
     // 2. Configuração da Zona do Campeão ALIADO
@@ -248,7 +262,7 @@ function setupDragAndDrop() {
         }
     }
 
-    console.log("Sortable.js v4.1.0 (Slots Estáticos) inicializado.");
+    console.log("Sortable.js v4.1.1 (Slots Estáticos) inicializado.");
 }
 
 /**
@@ -287,7 +301,8 @@ function handleChampionDrop(evt, target) {
     }
     
     // Comentário: (BUG 1) Atualiza o nome do campeão na UI
-    if (nameEl && DDragonData.championData[champId]) {
+    // Comentário: (v4.1.1) Verifica se DDragonData.championData existe
+    if (nameEl && DDragonData.championData && DDragonData.championData[champId]) {
         nameEl.innerText = DDragonData.championData[champId].name;
     }
     
@@ -562,8 +577,9 @@ function calculateStats(championId, level, itemIds) {
         return null;
     }
     
-    if (!DDragonData.championData[championId]) {
-        console.error(`Dados do campeão ${championId} não encontrados.`);
+    // Comentário: (v4.1.1) Adicionada guarda de segurança para DDragonData
+    if (!DDragonData.championData || !DDragonData.championData[championId]) {
+        console.error(`Dados do campeão ${championId} não encontrados ou DDragonData não carregado.`);
         return null;
     }
 
@@ -590,21 +606,24 @@ function calculateStats(championId, level, itemIds) {
 
     let itemAttackSpeedBonus = 0;
 
-    for (const itemId of itemIds) {
-        const itemStats = DDragonData.itemData[itemId]?.stats;
-        if (!itemStats) continue;
-        
-        totalStats.hp += itemStats.FlatHPPoolMod || 0;
-        totalStats.mp += itemStats.FlatMPPoolMod || 0;
-        totalStats.ad += itemStats.FlatPhysicalDamageMod || 0;
-        totalStats.armor += itemStats.FlatArmorMod || 0;
-        totalStats.spellblock += itemStats.FlatSpellBlockMod || 0;
-        totalStats.crit += (itemStats.FlatCritChanceMod || 0) * 100;
-        totalStats.movespeed += itemStats.FlatMovementSpeedMod || 0;
-        totalStats.hpregen += itemStats.FlatHPRegenMod || 0; // (BUG 3) Adicionado
-        totalStats.mpregen += itemStats.FlatMPRegenMod || 0; // (BUG 3) Adicionado
-        
-        itemAttackSpeedBonus += (itemStats.PercentAttackSpeedMod || 0);
+    // Comentário: (v4.1.1) Adicionada guarda de segurança para DDragonData
+    if (DDragonData.itemData) {
+        for (const itemId of itemIds) {
+            const itemStats = DDragonData.itemData[itemId]?.stats;
+            if (!itemStats) continue;
+            
+            totalStats.hp += itemStats.FlatHPPoolMod || 0;
+            totalStats.mp += itemStats.FlatMPPoolMod || 0;
+            totalStats.ad += itemStats.FlatPhysicalDamageMod || 0;
+            totalStats.armor += itemStats.FlatArmorMod || 0;
+            totalStats.spellblock += itemStats.FlatSpellBlockMod || 0;
+            totalStats.crit += (itemStats.FlatCritChanceMod || 0) * 100;
+            totalStats.movespeed += itemStats.FlatMovementSpeedMod || 0;
+            totalStats.hpregen += itemStats.FlatHPRegenMod || 0; // (BUG 3) Adicionado
+            totalStats.mpregen += itemStats.FlatMPRegenMod || 0; // (BUG 3) Adicionado
+            
+            itemAttackSpeedBonus += (itemStats.PercentAttackSpeedMod || 0);
+        }
     }
     
     const asBonusFromLevel = (getStatAtLevel(0, champBase.attackspeedperlevel) / 100);
