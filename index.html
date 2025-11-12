@@ -39,35 +39,34 @@
             background-color: #1a1a1a; /* gray-darkest */
             color: #e0e0e0;
             font-family: 'Inter', sans-serif;
+            /* Comentário: Layout de App (flex-col) para ads fixos (topo/rodapé) */
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
             overflow: hidden; /* Previne scroll da página inteira */
         }
         /* Custom Scrollbar */
-        ::-webkit-scrollbar {
-            width: 8px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #2c2c2c; /* gray-dark */
-            border-radius: 10px;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #404040; /* gray-light */
-            border-radius: 10px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #505050;
-        }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #2c2c2c; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb { background: #404040; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #505050; }
+        
         /* Efeito de hover no card */
         .card-item:hover {
             border-color: #39FF14; /* neon-green */
             box-shadow: 0 0 8px #39FF14;
         }
         /* Placeholder do Sortable.js */
-        .sortable-ghost {
-            opacity: 0.4;
-            background-color: #39FF14 !important;
-        }
-        .sortable-drag {
-            opacity: 1 !important;
+        .sortable-ghost { opacity: 0.4; background-color: #39FF14 !important; }
+        .sortable-drag { opacity: 1 !important; }
+
+        /* Comentário: Placeholder para os slots de itens vazios */
+        .item-slot-placeholder {
+            background-color: rgba(64, 64, 64, 0.3); /* gray-light com transparência */
+            border: 2px dashed #404040; /* gray-light */
+            width: 64px; /* 16 * 4 */
+            height: 64px; /* 16 * 4 */
+            border-radius: 0.5rem; /* rounded-lg */
         }
     </style>
 
@@ -77,18 +76,26 @@
          crossorigin="anonymous"></script>
 
 </head>
-<body class="p-4 md:p-8">
+<body class="p-0">
 
-    <main class="grid grid-cols-1 lg:grid-cols-4 gap-6 h-[calc(100vh-4rem)]">
+    <!-- AD BANNER TOPO (TAREFA 4) -->
+    <header id="adsense-top-banner" class="w-full h-24 bg-gray-dark flex items-center justify-center text-gray-500 shadow-lg z-10">
+        <!-- Comentário: Unidade de Anúncio Horizontal (ex: 728x90) deve ser inserida aqui -->
+        Espaço para Anúncio (Topo 728x90)
+    </header>
+
+    <!-- ÁREA PRINCIPAL DO APP (flex-1 para preencher o espaço) -->
+    <div class="flex-1 grid grid-cols-1 lg:grid-cols-5 gap-4 p-4 overflow-hidden">
 
         <!-- COLUNA 1: Biblioteca (Campeões e Itens) -->
         <div class="lg:col-span-1 bg-gray-darkest p-4 rounded-lg shadow-lg flex flex-col h-full">
             <h2 class="text-2xl font-bold text-neon-green mb-4">Biblioteca</h2>
             
-            <!-- Abas -->
+            <!-- Abas (TAREFA 2) -->
             <div class="mb-4">
-                <button class="bg-gray-light text-neon-green px-4 py-2 rounded-t-lg">Campeões</button>
-                <button class="bg-gray-dark text-gray-500 px-4 py-2 rounded-t-lg opacity-50">Itens</button>
+                <!-- Comentário: Adicionados IDs para os listeners de clique -->
+                <button id="tab-campeoes" class="bg-gray-light text-neon-green px-4 py-2 rounded-t-lg">Campeões</button>
+                <button id="tab-itens" class="bg-gray-dark text-gray-500 px-4 py-2 rounded-t-lg opacity-50">Itens</button>
             </div>
 
             <!-- CAMPO DE FILTRO (MISSÃO 6 - OTIMIZAÇÃO) -->
@@ -98,52 +105,69 @@
             </div>
             
             <!-- Área de Itens/Campeões (para popular com JS) -->
-            <!-- Altura ajustada para compensar o filtro -->
-            <div id="biblioteca-lista" class="flex flex-wrap gap-2 overflow-y-auto h-[calc(70vh_-_68px)] p-2 bg-gray-dark rounded-b-lg rounded-tr-lg justify-start content-start">
-                <!-- Placeholders (serão substituídos via JS) -->
-                <div class="w-16 h-16 bg-gray-light rounded-lg animate-pulse"></div>
-                <div class="w-16 h-16 bg-gray-light rounded-lg animate-pulse"></div>
+            <!-- Comentário: A altura foi ajustada para compensar o filtro -->
+            <div id="biblioteca-lista" class="flex flex-wrap gap-2 overflow-y-auto h-full p-2 bg-gray-dark rounded-b-lg rounded-tr-lg justify-start content-start">
+                <!-- Comentário: Placeholders são substituídos pelo app.js -->
                 <div class="w-16 h-16 bg-gray-light rounded-lg animate-pulse"></div>
             </div>
         </div>
 
         <!-- COLUNA 2: Card Ativo (Cálculos) -->
         <div class="lg:col-span-2 bg-gray-darkest p-4 rounded-lg shadow-lg flex flex-col h-full overflow-y-auto">
-            <h2 class="text-2xl font-bold text-neon-green mb-4">Card Ativo</h2>
-
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                
-                <!-- Dropzone do Campeão -->
-                <div id="campeao-selecionado-dropzone" class="md:col-span-1 bg-gray-dark rounded-lg p-4 h-40 flex items-center justify-center border-2 border-dashed border-gray-light text-gray-500 relative">
-                    <span class="text-center">Solte o Campeão Aqui</span>
-                    <!-- O campeão arrastado aparecerá aqui -->
+            
+            <!-- Comentário: Nova estrutura de layout (Tarefas 3, 5) -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- Placeholder 3D (TAREFA 3) -->
+                <div class="bg-gray-dark rounded-lg p-4 h-64 flex items-center justify-center border-2 border-dashed border-gray-light text-gray-500">
+                    Placeholder (Modelo 3D)
                 </div>
-
-                <!-- Inputs de Nível e Alvo -->
-                <div class="md:col-span-2 bg-gray-dark rounded-lg p-4 grid grid-cols-2 gap-4 h-40">
-                    <div>
-                        <label for="level" class="block text-sm font-medium text-neon-green">Nível do Campeão</label>
+                
+                <!-- Status do Campeão (TAREFA 5) -->
+                <div class="bg-gray-dark rounded-lg p-4 h-64 flex flex-col justify-between">
+                    <h3 class="text-lg font-semibold text-neon-green mb-2">Campeão</h3>
+                    <!-- Dropzone do Campeão -->
+                    <div id="campeao-selecionado-dropzone" class="bg-gray-darkest rounded-lg p-4 h-40 flex items-center justify-center border-2 border-dashed border-gray-light text-gray-500 relative">
+                        <span class="text-center">Solte o Campeão Aqui</span>
+                    </div>
+                    <!-- Nível -->
+                    <div class="mt-4">
+                        <label for="level" class="block text-sm font-medium text-neon-green">Nível</label>
                         <input type="number" id="level" name="level" value="1" min="1" max="18"
-                               class="mt-1 block w-full bg-gray-light border-gray-light rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-neon-green">
-                    </div>
-                    <div>
-                        <label for="target-armor" class="block text-sm font-medium text-gray-400">Armadura do Alvo</label>
-                        <input type="number" id="target-armor" name="target-armor" value="100" min="0"
-                               class="mt-1 block w-full bg-gray-light border-gray-light rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-neon-green">
-                    </div>
-                    <div>
-                        <label for="target-mr" class="block text-sm font-medium text-gray-400">Res. Mágica do Alvo</label>
-                        <input type="number" id="target-mr" name="target-mr" value="100" min="0"
                                class="mt-1 block w-full bg-gray-light border-gray-light rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-neon-green">
                     </div>
                 </div>
             </div>
 
-            <!-- Dropzone dos Itens -->
-            <div class="mt-4">
-                <h3 class="text-lg font-semibold text-gray-300 mb-2">Itens</h3>
-                <div id="itens-selecionados-dropzone" class="bg-gray-dark rounded-lg p-4 min-h-[100px] flex flex-wrap gap-2 border-2 border-dashed border-gray-light">
-                    <!-- Itens arrastados aparecerão aqui -->
+            <!-- Comentário: Nova estrutura de layout (Tarefas 1, 5) -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                <!-- Itens (TAREFA 1) -->
+                <div class="bg-gray-dark rounded-lg p-4">
+                    <h3 class="text-lg font-semibold text-gray-300 mb-2">Itens (6 Slots)</h3>
+                    <!-- Comentário: Dropzone única, mas estilizada como grid 3x2 -->
+                    <div id="itens-selecionados-dropzone" class="rounded-lg min-h-[140px] grid grid-cols-3 gap-2">
+                        <!-- Comentário: Slots vazios são apenas visuais, a lógica de drop é na div pai -->
+                        <div class="item-slot-placeholder"></div>
+                        <div class="item-slot-placeholder"></div>
+                        <div class="item-slot-placeholder"></div>
+                        <div class="item-slot-placeholder"></div>
+                        <div class="item-slot-placeholder"></div>
+                        <div class="item-slot-placeholder"></div>
+                    </div>
+                </div>
+
+                <!-- Status do Inimigo (TAREFA 5) -->
+                <div class="bg-gray-dark rounded-lg p-4">
+                    <h3 class="text-lg font-semibold text-gray-300 mb-2">Alvo (Inimigo)</h3>
+                    <div class="mt-4">
+                        <label for="target-armor" class="block text-sm font-medium text-gray-400">Armadura</label>
+                        <input type="number" id="target-armor" name="target-armor" value="100" min="0"
+                               class="mt-1 block w-full bg-gray-light border-gray-light rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-neon-green">
+                    </div>
+                    <div class="mt-4">
+                        <label for="target-mr" class="block text-sm font-medium text-gray-400">Res. Mágica</label>
+                        <input type="number" id="target-mr" name="target-mr" value="100" min="0"
+                               class="mt-1 block w-full bg-gray-light border-gray-light rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-neon-green">
+                    </div>
                 </div>
             </div>
 
@@ -163,15 +187,24 @@
                 <span id="resultado-dps" class="text-6xl font-bold text-white">0</span>
             </div>
             <p class="mt-4 text-gray-400">vs. alvo com <span id="display-armor">100</span> Armadura</p>
-            
-            <!-- Espaço para Monetização (Comando 4) -->
-            <!-- Este é o placeholder para o Bloco de Anúncio (Ad Unit) -->
-            <div id="adsense-block-vertical" class="mt-6 w-full h-48 bg-gray-dark border border-gray-light flex items-center justify-center text-gray-500 rounded-lg">
-                Espaço para Anúncio (Unidade de Anúncio)
-            </div>
         </div>
 
-    </main>
+        <!-- COLUNA 4: Ad Lateral (TAREFA 4) -->
+        <aside id="adsense-right-vertical" class="lg:col-span-1 bg-gray-darkest p-4 rounded-lg shadow-lg flex flex-col h-full items-center justify-start text-gray-500 overflow-y-auto">
+            <h3 class="text-lg font-semibold text-gray-300 mb-2">Anúncio</h3>
+            <!-- Comentário: Unidade de Anúncio Vertical (ex: 300x600) deve ser inserida aqui -->
+            <div class="w-full h-96 bg-gray-dark border border-gray-light flex items-center justify-center rounded-lg mt-4">
+                Espaço para Anúncio (Lateral 300x600)
+            </div>
+        </aside>
+
+    </div>
+
+    <!-- AD BANNER RODAPÉ (TAREFA 4) -->
+    <footer id="adsense-bottom-banner" class="w-full h-24 bg-gray-dark flex items-center justify-center text-gray-500 shadow-lg z-10">
+        <!-- Comentário: Unidade de Anúncio Horizontal (ex: 728x90) deve ser inserida aqui -->
+        Espaço para Anúncio (Rodapé 728x90)
+    </footer>
 
     <!-- Cérebro da Aplicação -->
     <script src="app.js"></script>
