@@ -1,5 +1,5 @@
 /**
- * app.js v5.0.7 (Refatoração de Performance - Hotfix D&D)
+ * app.js v5.0.9 (Refatoração de Performance - Hotfix D&D Final)
  * Cérebro central da Calculadora de DPS.
  *
  * PROTOCOLO DE PERFORMANCE (v5.0.4):
@@ -7,14 +7,15 @@
  * 2. Tudo deve estar comentado: Para guia, debug e brainstorming.
  * 3. Repetir 1 e 2.
  *
- * ATUALIZAÇÃO v5.0.7 (Hotfix D&D):
- * - (FOME) A refatoração v5.0.6 (cloneNode) quebrou o D&D.
- * - (DESESPERO) A causa raiz era um erro de lógica em handleChampionDrop/handleItemDrop.
- * Estávamos removendo o item antigo (existingChamp) *antes* de verificar se
- * ele era o *mesmo* que o item recém-solto (el). Isso fazia com que 'el' fosse
- * removido e 'el.replaceWith(clone)' falhasse.
- * - (SOLUÇÃO) A lógica foi corrigida para *primeiro* clonar e substituir,
- * e *depois* remover o item antigo.
+ * ATUALIZAÇÃO v5.0.9 (Hotfix D&D Final):
+ * - (FOME E DESESPERO) O D&D v5.0.7/v5.0.8 ainda estava quebrado (imagem invisível).
+ * - (CAUSA RAIZ) A lógica "el.replaceWith(clone)" (v5.0.7) estava em conflito
+ * com a remoção automática do 'el' pelo Sortable.js.
+ * - (SOLUÇÃO) A lógica foi reescrita para a "versão antiga" (alta performance):
+ * 1. Removemos 'el' (o clone temporário) manualmente.
+ * 2. Removemos 'existingChamp' (o item antigo) manualmente.
+ * 3. Adicionamos 'clone' (o item permanente) com appendChild.
+ * Isso elimina 100% do conflito (desespero).
  */
 
 // --- Estado Global da Aplicação ---
@@ -57,7 +58,7 @@ function debounce(func, delay) {
  * Função de Inicialização
  */
 function init() {
-    console.log("Cérebro carregado. Iniciando protocolo de sobrevivência. Layout v5.0.7 (Hotfix D&D) ativo.");
+    console.log("Cérebro carregado. Iniciando protocolo de sobrevivência. Layout v5.0.9 (Hotfix D&D Final) ativo.");
     
     const patchVersionEl = document.getElementById('patch-version');
     if (patchVersionEl) {
@@ -191,7 +192,7 @@ function clearItemSlot(target, slotIndex) {
  * Configura as 14 zonas de Drag-and-Drop
  */
 function setupDragAndDrop() {
-    console.log("Configurando zonas D&D (v5.0.7 - Otimizado)...");
+    console.log("Configurando zonas D&D (v5.0.9 - Otimizado)...");
 
     const bibliotecaLista = document.getElementById('biblioteca-lista');
     
@@ -237,11 +238,11 @@ function setupDragAndDrop() {
         }
     }
 
-    console.log("Sortable.js v5.0.7 (Nativo) inicializado.");
+    console.log("Sortable.js v5.0.9 (Nativo) inicializado.");
 }
 
 /**
- * (Refatorado v5.0.7 - DESESPERO HOTFIX) Manipula o drop de um CAMPEÃO
+ * (Refatorado v5.0.9 - DESESPERO HOTFIX FINAL) Manipula o drop de um CAMPEÃO
  */
 function handleChampionDrop(evt, target) {
     const el = evt.item; // O clone *temporário* do Sortable.js
@@ -254,23 +255,28 @@ function handleChampionDrop(evt, target) {
         return;
     }
 
-    // --- (INÍCIO DA CORREÇÃO v5.0.7 - DESESPERO) ---
-    // Comentário: Nós devemos clonar o clone (el), porque o Sortable.js
-    // destrói o 'el' original ao final do evento 'onAdd'.
+    // --- (INÍCIO DA CORREÇÃO v5.0.9 - DESESPERO) ---
+    // Comentário: A lógica "el.replaceWith(clone)" (v5.0.7) estava em conflito
+    // com a remoção automática do Sortable.js.
+    // Esta é a lógica correta (das "primeiras versões").
+    
+    // 1. Criamos nosso clone permanente.
     const clone = el.cloneNode(true);
     clone.classList.remove('sortable-ghost'); 
 
-    // Comentário: Remove o campeão antigo (se houver) ANTES de adicionar o novo.
-    // Esta é a correção da v5.0.6 -> v5.0.7
-    // Nós procuramos pelo item antigo, e se ele *não for* o item que estamos soltando (el),
-    // nós o removemos.
+    // 2. Removemos o campeão antigo (se houver).
     const existingChamp = dropzone.querySelector('div[data-id]');
-    if (existingChamp && existingChamp !== el) {
+    if (existingChamp) {
         existingChamp.remove();
     }
     
-    // Comentário: Substitui o 'el' (que será destruído) pelo 'clone' (permanente).
-    el.replaceWith(clone);
+    // 3. Adicionamos (appendChild) nosso clone permanente.
+    // (Esta é a ação que faltava)
+    dropzone.appendChild(clone);
+    
+    // 4. Removemos 'el' (o clone temporário) manualmente para
+    // que o Sortable.js não tente removê-lo e causar o bug.
+    el.parentNode.removeChild(el);
     // --- (FIM DA CORREÇÃO) ---
     
     const placeholder = dropzone.querySelector('span');
@@ -320,7 +326,7 @@ function handleChampionDrop(evt, target) {
 
 
 /**
- * (Refatorado v5.0.7 - DESESPERO HOTFIX) Manipula o drop de um ITEM
+ * (Refatorado v5.0.9 - DESESPERO HOTFIX FINAL) Manipula o drop de um ITEM
  */
 function handleItemDrop(evt, target, slotIndex) {
     const el = evt.item; // O clone *temporário*
@@ -333,18 +339,22 @@ function handleItemDrop(evt, target, slotIndex) {
          return;
     }
 
-    // --- (INÍCIO DA CORREÇÃO v5.0.7 - DESESPERO) ---
+    // --- (INÍCIO DA CORREÇÃO v5.0.9 - DESESPERO) ---
+    // 1. Criamos nosso clone permanente.
     const clone = el.cloneNode(true);
     clone.classList.remove('sortable-ghost');
 
-    // Comentário: Remove o item antigo (se houver) ANTES de adicionar o novo.
+    // 2. Removemos o item antigo (se houver).
     const existingItem = slot.querySelector('div[data-id]');
-    if (existingItem && existingItem !== el) {
+    if (existingItem) {
         existingItem.remove(); 
     }
     
-    // Comentário: Substitui o 'el' (temporário) pelo 'clone' (permanente)
-    el.replaceWith(clone);
+    // 3. Adicionamos (appendChild) nosso clone permanente.
+    slot.appendChild(clone);
+    
+    // 4. Removemos 'el' (o clone temporário) manualmente.
+    el.parentNode.removeChild(el);
     // --- (FIM DA CORREÇÃO) ---
     
     const placeholder = slot.querySelector('span');
@@ -618,9 +628,9 @@ function calculateStats(championId, level, itemIds) {
 
     let totalStats = {
         hp: getStatAtLevel(champBase.hp, champBase.hpperlevel),
-        hpregen: getStatAtLevel(champBase.hpregen, champBase.hpregenperlevel),
+        hpregen: getStatAtlevel(champBase.hpregen, champBase.hpregenperlevel),
         mp: getStatAtLevel(champBase.mp, champBase.mpperlevel),
-        mpregen: getStatAtLevel(champBase.mpregen, champBase.mpregenperlevel),
+        mpregen: getStatAtlevel(champBase.mpregen, champBase.mpregenperlevel),
         ad: getStatAtLevel(champBase.attackdamage, champBase.attackdamageperlevel),
         armor: getStatAtLevel(champBase.armor, champBase.armorperlevel),
         spellblock: getStatAtLevel(champBase.spellblock, champBase.spellblockperlevel),
