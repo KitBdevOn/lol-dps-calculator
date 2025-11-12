@@ -1,5 +1,5 @@
 /**
- * app.js v6.2.0 (Refatoração de Layout - Footer Fixo e DPS Triângulo)
+ * app.js v6.0.0 (Refatoração de D&D - Nativo)
  * Cérebro central da Calculadora de DPS.
  *
  * PROTOCOLO DE PERFORMANCE (v5.0.4):
@@ -7,15 +7,12 @@
  * 2. Tudo deve estar comentado: Para guia, debug e brainstorming.
  * 3. Repetir 1 e 2.
  *
- * ATUALIZAÇÃO v6.2.0 (Layout):
- * - (FOME) Corrigido o "footer flutuante" (v6.1.0) envolvendo o 
- * site em um ".site-wrapper" (min-height: 100vh).
- * - (FOME) Corrigido o bloco de Receita (removido flex-grow) 
- * para não "ocupar espaço demais".
- * - (FOME) Otimizado o layout dos balões de DPS para "Triângulo"
- * (AD/AP no topo, Total embaixo) para economizar espaço.
- * - (DESESPERO) Adicionada lógica de fonte dinâmica ao DPS para 
- * prevenir overflow de texto.
+ * ATUALIZAÇÃO v6.0.0 (D&D Nativo):
+ * - (FOME E DESESPERO) A biblioteca Sortable.js (v5.x) era a causa raiz
+ * de 100% dos nossos bugs de D&D (desperdício de energia).
+ * - (SOLUÇÃO - IDEIA DO USUÁRIO) Removemos o Sortable.js (economia de energia).
+ * - (SOLUÇÃO) Implementamos a API Nativa de D&D do HTML5 ("o slot lê o código
+ * e retorna a imagem"). Isso elimina 100% dos bugs de "clone".
  */
 
 // --- Estado Global da Aplicação ---
@@ -58,7 +55,7 @@ function debounce(func, delay) {
  * Função de Inicialização
  */
 function init() {
-    console.log("Cérebro carregado. Iniciando protocolo de sobrevivência. Layout v6.2.0 (Layout Fixo) ativo.");
+    console.log("Cérebro carregado. Iniciando protocolo de sobrevivência. Layout v6.0.0 (D&D Nativo) ativo.");
     
     const patchVersionEl = document.getElementById('patch-version');
     if (patchVersionEl) {
@@ -211,16 +208,10 @@ function allowDrop(evt) {
  * (v6.0.0) Adiciona/Remove classe de feedback visual
  */
 function handleDragEnter(evt) {
-    // Comentário: Garante que o evento está no 'alvo' (o slot) e não
-    // em um filho (como o placeholder span)
-    if (evt.target.classList.contains('item-slot') || evt.target.classList.contains('champion-dropzone')) {
-        evt.target.classList.add('drag-over');
-    }
+    evt.target.classList.add('drag-over');
 }
 function handleDragLeave(evt) {
-    if (evt.target.classList.contains('item-slot') || evt.target.classList.contains('champion-dropzone')) {
-        evt.target.classList.remove('drag-over');
-    }
+    evt.target.classList.remove('drag-over');
 }
 
 /**
@@ -245,11 +236,7 @@ function handleDragEnd(evt) {
  */
 function handleDrop(evt, target, expectedType, slotIndex) {
     evt.preventDefault();
-    
-    // Comentário: 'currentTarget' é mais seguro que 'target' para
-    // garantir que pegamos o elemento com o listener (o slot)
-    const dropzone = evt.currentTarget;
-    dropzone.classList.remove('drag-over');
+    evt.target.classList.remove('drag-over');
 
     // 1. "Lê o código" (ID e Tipo)
     const id = evt.dataTransfer.getData("text/plain");
@@ -260,8 +247,17 @@ function handleDrop(evt, target, expectedType, slotIndex) {
         console.warn(`Rejeitado: Tipo errado. Esperado ${expectedType}, recebido ${type}.`);
         return;
     }
+
+    // 3. Define a dropzone
+    let dropzone;
+    if (expectedType === 'champion') {
+        dropzone = (target === 'aliado') ? document.getElementById('campeao-selecionado-dropzone') : document.getElementById('inimigo-selecionado-dropzone');
+    } else {
+        dropzone = document.getElementById(`${target}-item-slot-${slotIndex}`);
+    }
+    if (!dropzone) return;
     
-    // 3. "Retorna a imagem" (Renderiza)
+    // 4. "Retorna a imagem" (Renderiza)
     const imageUrl = (type === 'champion') 
         ? `${DDragonData.baseUrl}/img/champion/${DDragonData.championData[id].image.full}`
         : `${DDragonData.baseUrl}/img/item/${DDragonData.itemData[id].image.full}`;
@@ -279,15 +275,11 @@ function handleDrop(evt, target, expectedType, slotIndex) {
     img.draggable = false; // Impede que o item solto seja arrastado novamente
     
     // Adiciona o listener de clique para remover
-    img.addEventListener('click', (e) => {
-        // (FOME) Impede que o clique no item acione o clique na biblioteca
-        e.stopPropagation(); 
-        handleRemove(target, expectedType, slotIndex);
-    });
+    img.addEventListener('click', () => handleRemove(target, expectedType, slotIndex));
     
     dropzone.appendChild(img);
 
-    // 4. Atualiza o Estado
+    // 5. Atualiza o Estado
     if (type === 'champion') {
         if (target === 'aliado') {
             currentState.championId = id;
@@ -483,10 +475,6 @@ function showRecipe(id, type) {
     const receitaBloco = document.getElementById('receita-bloco');
     if (!receitaBloco) return;
 
-    // (FOME) Impede que o clique no item da biblioteca
-    // acione o drop (que também usa 'click' para remover)
-    if (event) event.stopPropagation(); 
-
     if (type === 'champion') {
         receitaBloco.innerHTML = '<span class="text-gray-500">Clique em um item da biblioteca para ver sua receita.</span>';
         return;
@@ -670,7 +658,7 @@ function renderRPGCard(target, stats) {
  */
 function calculateDPS(aliadoStats, inimigoStats) {
     if (!aliadoStats) {
-        renderDPS(0, 0); // (v6.2.0) Passa 0 para AD e AP
+        renderDPS(0);
         return;
     }
     
@@ -691,43 +679,18 @@ function calculateDPS(aliadoStats, inimigoStats) {
     const baseDPS = (aliadoStats.ad * aliadoStats.attackspeed) * damageMultiplier;
     const dps = baseDPS * (1 + (critChance * critDamageBonus));
 
-    // (v6.2.0) Por enquanto, dpsAd é igual ao dps total. dpsAp é 0.
-    renderDPS(dps, 0); 
+    renderDPS(dps);
 }
 
 /**
- * (Refatorado v6.2.0) Renderiza o resultado final do DPS na UI
+ * Renderiza o resultado final do DPS na UI
  */
-function renderDPS(dpsAd, dpsAp) {
-    const dpsTotal = dpsAd + dpsAp;
-    
-    // Comentário: Chama o helper de fonte dinâmica (v6.2.0)
-    updateDPSBubble('resultado-dps-total-value', dpsTotal.toFixed(0), 'text-5xl', 'text-4xl');
-    updateDPSBubble('resultado-dps-ad-value', dpsAd.toFixed(0), 'text-4xl', 'text-3xl');
-    updateDPSBubble('resultado-dps-ap-value', dpsAp.toFixed(0), 'text-4xl', 'text-3xl');
-}
-
-/**
- * (NOVO v6.2.0 - DESESPERO 4) Helper para atualizar o texto do DPS
- * e ajustar dinamicamente o tamanho da fonte se o número for muito grande.
- */
-function updateDPSBubble(elementId, value, defaultClass, smallClass) {
-    const el = document.getElementById(elementId);
-    if (!el) return;
-
-    el.innerText = value;
-    
-    // Comentário: Se o número tiver 5+ dígitos (ex: 10000), 
-    // reduzimos a fonte para evitar overflow.
-    if (value.length >= 5) {
-        el.classList.remove(defaultClass);
-        el.classList.add(smallClass);
-    } else {
-        el.classList.add(defaultClass);
-        el.classList.remove(smallClass);
+function renderDPS(dps) {
+    const dpsElement = document.getElementById('resultado-dps');
+    if (dpsElement) {
+        dpsElement.innerText = dps.toFixed(0);
     }
 }
-
 
 /**
  * Filtra os itens na biblioteca com base no input E na aba ativa.
