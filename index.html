@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- 
-  v4.1.0 - Refatoração Crítica (Status, Itens, Bugs)
+  v4.1.2 - Hotfix Crítico (D&D Overflow)
   Protocolo:
   1. Nossa Máxima: Desperdício de energia é fome e desespero.
   2. Tudo deve estar comentado: Para guia, debug e brainstorming.
@@ -41,15 +41,22 @@
     
     <!-- 4. Estilos Globais (v4.0.0 - Glassmorphism) -->
     <style>
+        /* Comentário: (CORREÇÃO v4.1.2) O body SÓ deve ter o fundo/fonte. */
         body {
             background-color: #1a1a1a; /* gray-darkest */
             color: #e0e0e0;
             font-family: 'Inter', sans-serif;
+        }
+
+        /* Comentário: (NOVO v4.1.2) Este wrapper agora contém o overflow
+           para que o <body> fique "limpo" e o fallbackOnBody do D&D funcione. */
+        .app-wrapper {
             display: flex;
             flex-direction: column;
             height: 100vh;
             overflow: hidden; /* Previne scroll da página inteira */
         }
+
         /* Custom Scrollbar */
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-track { background: #2c2c2c; border-radius: 10px; }
@@ -57,6 +64,7 @@
         ::-webkit-scrollbar-thumb:hover { background: #505050; }
         
         /* Placeholder do Sortable.js */
+        /* Comentário: (v4.1.2) O fallbackOnBody usa estas classes */
         .sortable-ghost { opacity: 0.4; background-color: #39FF14 !important; }
         .sortable-drag { opacity: 1 !important; }
 
@@ -220,180 +228,180 @@
 </head>
 <body class="p-0">
 
-    <!-- AD BANNER TOPO / HEADER (v4.0.0) -->
-    <header id="main-header" class="w-full h-24 glass-header flex items-center justify-between p-4 z-10">
-        
-        <!-- Comentário: Botões de Idioma (i18n) -->
-        <div class="flex gap-2">
-            <button id="lang-br" class="text-2xl opacity-100 hover:opacity-100 transition-opacity duration-200" title="Mudar para Português (BR)">🇧🇷</button>
-            <button id="lang-us" class="text-2xl opacity-50 hover:opacity-100 transition-opacity duration-200" title="Mudar para Inglês (US)">🇺🇸</button>
-        </div>
+    <!-- (NOVO v4.1.2) Wrapper para conter o overflow e corrigir o bug do D&D -->
+    <div class="app-wrapper">
 
-        <!-- Comentário: AdSense Top Banner -->
-        <div id="adsense-top-banner" class="flex-grow h-full flex items-center justify-center text-gray-500">
-            Espaço para Anúncio (Topo 728x90)
-        </div>
-
-        <!-- Comentário: Exibição da versão do patch -->
-        <div class="w-32 text-right">
-            <span id="patch-version" class="text-xs text-gray-500" title="Versão do Data Dragon"></span>
-        </div>
-    </header>
-
-    <!-- ÁREA PRINCIPAL DO APP (v4.1.0 Layout 3-4-3) -->
-    <!-- Comentário: (BUG 3) Mudamos de 12 colunas (3-6-3) para 10 colunas (3-4-3) 
-         dando mais espaço para as colunas laterais (Stats). -->
-    <div class="flex-1 grid grid-cols-1 lg:grid-cols-10 gap-4 p-4 overflow-hidden min-h-0">
-
-        <!-- COLUNA 1: CAMPEÃO ALIADO (Esquerda) -->
-        <!-- Comentário: (BUG 3) lg:col-span-3 (30%) -->
-        <div class="lg:col-span-3 glass-card p-4 rounded-lg flex flex-col h-full overflow-y-auto">
-            <h2 class="text-2xl font-bold text-neon-green mb-4">Aliado</h2>
+        <!-- AD BANNER TOPO / HEADER (v4.0.0) -->
+        <header id="main-header" class="w-full h-24 glass-header flex items-center justify-between p-4 z-10">
             
-            <!-- Agrupamento de Campeão e Nível -->
-            <div class="glass-sub-card rounded-lg p-4 flex gap-4 items-center">
-                <!-- Comentário: (BUG 1) Container com padding de 2px para a "borda" -->
-                <div class="bg-gray-darkest rounded-lg p-[2px]">
-                    <!-- Comentário: (BUG 1) Dropzone 80x80px (w-20 h-20) -->
-                    <div id="campeao-selecionado-dropzone" class="champion-dropzone relative">
-                        <span class="text-center text-xs p-1 absolute inset-0 flex items-center justify-center text-gray-500">Aliado</span>
+            <!-- Comentário: Botões de Idioma (i18n) -->
+            <div class="flex gap-2">
+                <button id="lang-br" class="text-2xl opacity-100 hover:opacity-100 transition-opacity duration-200" title="Mudar para Português (BR)">🇧🇷</button>
+                <button id="lang-us" class="text-2xl opacity-50 hover:opacity-100 transition-opacity duration-200" title="Mudar para Inglês (US)">🇺🇸</button>
+            </div>
+
+            <!-- Comentário: AdSense Top Banner -->
+            <div id="adsense-top-banner" class="flex-grow h-full flex items-center justify-center text-gray-500">
+                Espaço para Anúncio (Topo 728x90)
+            </div>
+
+            <!-- Comentário: Exibição da versão do patch -->
+            <div class="w-32 text-right">
+                <span id="patch-version" class="text-xs text-gray-500" title="Versão do Data Dragon"></span>
+            </div>
+        </header>
+
+        <!-- ÁREA PRINCIPAL DO APP (v4.1.0 Layout 3-4-3) -->
+        <div class="flex-1 grid grid-cols-1 lg:grid-cols-10 gap-4 p-4 overflow-hidden min-h-0">
+
+            <!-- COLUNA 1: CAMPEÃO ALIADO (Esquerda) -->
+            <div class="lg:col-span-3 glass-card p-4 rounded-lg flex flex-col h-full overflow-y-auto">
+                <h2 class="text-2xl font-bold text-neon-green mb-4">Aliado</h2>
+                
+                <!-- Agrupamento de Campeão e Nível -->
+                <div class="glass-sub-card rounded-lg p-4 flex gap-4 items-center">
+                    <!-- Comentário: (BUG 1) Container com padding de 2px para a "borda" -->
+                    <div class="bg-gray-darkest rounded-lg p-[2px]">
+                        <!-- Comentário: (BUG 1) Dropzone 80x80px (w-20 h-20) -->
+                        <div id="campeao-selecionado-dropzone" class="champion-dropzone relative">
+                            <span class="text-center text-xs p-1 absolute inset-0 flex items-center justify-center text-gray-500">Aliado</span>
+                        </div>
+                    </div>
+                    <!-- Nível e Nome -->
+                    <div class="flex-grow">
+                        <!-- Comentário: (BUG 1) Nome do Campeão -->
+                        <h3 id="aliado-champion-name" class="text-lg font-semibold text-white mb-1 h-6 truncate" title="Nome do Campeão"></h3>
+                        
+                        <label for="level" class="block text-sm font-medium text-neon-green">Nível (Aliado)</label>
+                        <input type="number" id="level" name="level" value="1" min="1" max="18"
+                               class="mt-1 block w-full glass-input rounded-lg p-2">
                     </div>
                 </div>
-                <!-- Nível e Nome -->
-                <div class="flex-grow">
-                    <!-- Comentário: (BUG 1) Nome do Campeão -->
-                    <h3 id="aliado-champion-name" class="text-lg font-semibold text-white mb-1 h-6 truncate" title="Nome do Campeão"></h3>
-                    
-                    <label for="level" class="block text-sm font-medium text-neon-green">Nível (Aliado)</label>
-                    <input type="number" id="level" name="level" value="1" min="1" max="18"
-                           class="mt-1 block w-full glass-input rounded-lg p-2">
-                </div>
-            </div>
 
-            <!-- Comentário: (BUG 2) Bloco de Itens Estático (Aliado) -->
-            <div class="glass-sub-card rounded-lg p-4 mt-4">
-                <h3 class="text-lg font-semibold text-gray-300 mb-2">Itens (Aliado)</h3>
-                <!-- Comentário: (BUG 2) Grid ESTATICO com 6 slots de drop INDIVIDUAIS -->
-                <div class="grid grid-cols-3 gap-2 justify-items-center">
-                    <!-- Comentário: Cada div é uma dropzone separada -->
-                    <div id="aliado-item-slot-0" class="item-slot-placeholder"><span>Slot 1</span></div>
-                    <div id="aliado-item-slot-1" class="item-slot-placeholder"><span>Slot 2</span></div>
-                    <div id="aliado-item-slot-2" class="item-slot-placeholder"><span>Slot 3</span></div>
-                    <div id="aliado-item-slot-3" class="item-slot-placeholder"><span>Slot 4</span></div>
-                    <div id="aliado-item-slot-4" class="item-slot-placeholder"><span>Slot 5</span></div>
-                    <div id="aliado-item-slot-5" class="item-slot-placeholder"><span>Slot 6</span></div>
-                </div>
-            </div>
-
-            <!-- Comentário: (BUG 3) Tabela de Status (Aliado) -->
-            <div id="card-rpg" class="mt-4">
-                <h3 class="text-lg font-semibold text-gray-300 mb-2">Status Totais (Aliado)</h3>
-                <!-- Comentário: (BUG 3) Container populado pelo JS -->
-                <div id="aliado-stats-container" class="glass-sub-card rounded-lg p-4">
-                    <!-- A função renderRPGCard irá popular esta div -->
-                    <span class="text-gray-500 text-sm">Selecione um Campeão</span>
-                </div>
-            </div>
-
-            <!-- Bloco de DPS -->
-            <div class="mt-4 text-center">
-                <h2 class="text-2xl font-bold text-neon-green mb-4">DPS (AA)</h2>
-                <div class="dps-circle rounded-full w-48 h-48 flex items-center justify-center mx-auto">
-                    <span id="resultado-dps" class="text-6xl font-bold text-white">0</span>
-                </div>
-            </div>
-        </div>
-
-        <!-- COLUNA 2: BIBLIOTECA (Meio) -->
-        <!-- Comentário: (BUG 3) lg:col-span-4 (40%) -->
-        <div class="lg:col-span-4 glass-card p-4 rounded-lg flex flex-col h-full">
-            <h2 class="text-2xl font-bold text-neon-green mb-4">Biblioteca</h2>
-            
-            <!-- Abas (v4.0.0) -->
-            <div class="mb-4 border-b border-gray-light">
-                <button id="tab-campeoes" class="tab-button tab-button-active px-4 py-2">Campeões</button>
-                <button id="tab-itens" class="tab-button px-4 py-2">Itens</button>
-            </div>
-
-            <!-- Filtro (v4.0.0) -->
-            <div class="mb-4">
-                <input type="text" id="filtro-biblioteca" placeholder="Filtrar por nome..."
-                       class="w-full glass-input rounded-lg p-2">
-            </div>
-            
-            <!-- Área da Biblioteca (Scroll 4x4) (v3.2.0) -->
-            <div id="biblioteca-lista" class="glass-sub-card grid grid-cols-4 gap-2 overflow-y-auto h-[344px] p-2 rounded-lg content-start justify-items-center">
-                <!-- Placeholders (serão substituídos via JS) -->
-                <div class="w-20 h-20 glass-input rounded-lg animate-pulse"></div>
-            </div>
-
-            <!-- Bloco de Receita (v3.0.0) -->
-            <div class="mt-4 flex-1 flex flex-col">
-                <h3 class="text-lg font-semibold text-gray-300 mb-2">Receita do Item</h3>
-                <!-- Este bloco será populado pelo app.js ao clicar em um item -->
-                <div id="receita-bloco" class="glass-sub-card rounded-lg p-4 min-h-[100px] flex-1 flex items-center justify-center gap-2">
-                    <span class="text-gray-500">Clique em um item da biblioteca para ver sua receita.</span>
-                </div>
-            </div>
-        </div>
-
-        <!-- COLUNA 3: CAMPEÃO INIMIGO (Direita) -->
-        <!-- Comentário: (BUG 3) lg:col-span-3 (30%) -->
-        <div class="lg:col-span-3 glass-card p-4 rounded-lg flex flex-col h-full overflow-y-auto">
-            <h2 class="text-2xl font-bold text-neon-green mb-4">Inimigo</h2>
-
-            <!-- Campeão Inimigo (v3.0.0) -->
-            <div class="glass-sub-card rounded-lg p-4 flex gap-4 items-center">
-                <!-- Comentário: (BUG 1) Container com padding de 2px para a "borda" -->
-                <div class="bg-gray-darkest rounded-lg p-[2px]">
-                    <!-- Comentário: (BUG 1) Dropzone 80x80px (w-20 h-20) -->
-                    <div id="inimigo-selecionado-dropzone" class="champion-dropzone relative">
-                        <span class="text-center text-xs p-1 absolute inset-0 flex items-center justify-center text-gray-500">Inimigo</span>
+                <!-- Comentário: (BUG 2) Bloco de Itens Estático (Aliado) -->
+                <div class="glass-sub-card rounded-lg p-4 mt-4">
+                    <h3 class="text-lg font-semibold text-gray-300 mb-2">Itens (Aliado)</h3>
+                    <!-- Comentário: (BUG 2) Grid ESTATICO com 6 slots de drop INDIVIDUAIS -->
+                    <div class="grid grid-cols-3 gap-2 justify-items-center">
+                        <!-- Comentário: Cada div é uma dropzone separada -->
+                        <div id="aliado-item-slot-0" class="item-slot-placeholder"><span>Slot 1</span></div>
+                        <div id="aliado-item-slot-1" class="item-slot-placeholder"><span>Slot 2</span></div>
+                        <div id="aliado-item-slot-2" class="item-slot-placeholder"><span>Slot 3</span></div>
+                        <div id="aliado-item-slot-3" class="item-slot-placeholder"><span>Slot 4</span></div>
+                        <div id="aliado-item-slot-4" class="item-slot-placeholder"><span>Slot 5</span></div>
+                        <div id="aliado-item-slot-5" class="item-slot-placeholder"><span>Slot 6</span></div>
                     </div>
                 </div>
-                <!-- Nível e Nome -->
-                <div class="flex-grow">
-                    <!-- Comentário: (BUG 1) Nome do Campeão -->
-                    <h3 id="inimigo-champion-name" class="text-lg font-semibold text-white mb-1 h-6 truncate" title="Nome do Campeão"></h3>
-                    
-                    <label for="enemy-level" class="block text-sm font-medium text-neon-green">Nível (Inimigo)</label>
-                    <input type="number" id="enemy-level" name="enemy-level" value="1" min="1" max="18"
-                           class="mt-1 block w-full glass-input rounded-lg p-2">
+
+                <!-- Comentário: (BUG 3) Tabela de Status (Aliado) -->
+                <div id="card-rpg" class="mt-4">
+                    <h3 class="text-lg font-semibold text-gray-300 mb-2">Status Totais (Aliado)</h3>
+                    <!-- Comentário: (BUG 3) Container populado pelo JS -->
+                    <div id="aliado-stats-container" class="glass-sub-card rounded-lg p-4">
+                        <!-- A função renderRPGCard irá popular esta div -->
+                        <span class="text-gray-500 text-sm">Selecione um Campeão</span>
+                    </div>
+                </div>
+
+                <!-- Bloco de DPS -->
+                <div class="mt-4 text-center">
+                    <h2 class="text-2xl font-bold text-neon-green mb-4">DPS (AA)</h2>
+                    <div class="dps-circle rounded-full w-48 h-48 flex items-center justify-center mx-auto">
+                        <span id="resultado-dps" class="text-6xl font-bold text-white">0</span>
+                    </div>
                 </div>
             </div>
 
-            <!-- Comentário: (BUG 2) Bloco de Itens Estático (Inimigo) -->
-            <div class="glass-sub-card rounded-lg p-4 mt-4">
-                <h3 class="text-lg font-semibold text-gray-300 mb-2">Itens (Inimigo)</h3>
-                <!-- Comentário: (BUG 2) Grid ESTATICO com 6 slots de drop INDIVIDUAIS -->
-                <div class="grid grid-cols-3 gap-2 justify-items-center">
-                    <div id="inimigo-item-slot-0" class="item-slot-placeholder"><span>Slot 1</span></div>
-                    <div id="inimigo-item-slot-1" class="item-slot-placeholder"><span>Slot 2</span></div>
-                    <div id="inimigo-item-slot-2" class="item-slot-placeholder"><span>Slot 3</span></div>
-                    <div id="inimigo-item-slot-3" class="item-slot-placeholder"><span>Slot 4</span></div>
-                    <div id="inimigo-item-slot-4" class="item-slot-placeholder"><span>Slot 5</span></div>
-                    <div id="inimigo-item-slot-5" class="item-slot-placeholder"><span>Slot 6</span></div>
+            <!-- COLUNA 2: BIBLIOTECA (Meio) -->
+            <div class="lg:col-span-4 glass-card p-4 rounded-lg flex flex-col h-full">
+                <h2 class="text-2xl font-bold text-neon-green mb-4">Biblioteca</h2>
+                
+                <!-- Abas (v4.0.0) -->
+                <div class="mb-4 border-b border-gray-light">
+                    <button id="tab-campeoes" class="tab-button tab-button-active px-4 py-2">Campeões</button>
+                    <button id="tab-itens" class="tab-button px-4 py-2">Itens</button>
+                </div>
+
+                <!-- Filtro (v4.0.0) -->
+                <div class="mb-4">
+                    <input type="text" id="filtro-biblioteca" placeholder="Filtrar por nome..."
+                           class="w-full glass-input rounded-lg p-2">
+                </div>
+                
+                <!-- Área da Biblioteca (Scroll 4x4) (v3.2.0) -->
+                <div id="biblioteca-lista" class="glass-sub-card grid grid-cols-4 gap-2 overflow-y-auto h-[344px] p-2 rounded-lg content-start justify-items-center">
+                    <!-- Placeholders (serão substituídos via JS) -->
+                    <div class="w-20 h-20 glass-input rounded-lg animate-pulse"></div>
+                </div>
+
+                <!-- Bloco de Receita (v3.0.0) -->
+                <div class="mt-4 flex-1 flex flex-col">
+                    <h3 class="text-lg font-semibold text-gray-300 mb-2">Receita do Item</h3>
+                    <!-- Este bloco será populado pelo app.js ao clicar em um item -->
+                    <div id="receita-bloco" class="glass-sub-card rounded-lg p-4 min-h-[100px] flex-1 flex items-center justify-center gap-2">
+                        <span class="text-gray-500">Clique em um item da biblioteca para ver sua receita.</span>
+                    </div>
                 </div>
             </div>
 
-            <!-- Comentário: (BUG 3) Tabela de Status (Inimigo) -->
-            <div id="card-rpg-inimigo" class.="mt-4">
-                <h3 class="text-lg font-semibold text-gray-300 mb-2">Status Totais (Inimigo)</h3>
-                <!-- Comentário: (BUG 3) Container populado pelo JS -->
-                <div id="inimigo-stats-container" class="glass-sub-card rounded-lg p-4">
-                    <!-- A função renderRPGCard irá popular esta div -->
-                    <span class="text-gray-500 text-sm">Selecione um Inimigo</span>
+            <!-- COLUNA 3: CAMPEÃO INIMIGO (Direita) -->
+            <div class="lg:col-span-3 glass-card p-4 rounded-lg flex flex-col h-full overflow-y-auto">
+                <h2 class="text-2xl font-bold text-neon-green mb-4">Inimigo</h2>
+
+                <!-- Campeão Inimigo (v3.0.0) -->
+                <div class="glass-sub-card rounded-lg p-4 flex gap-4 items-center">
+                    <!-- Comentário: (BUG 1) Container com padding de 2px para a "borda" -->
+                    <div class="bg-gray-darkest rounded-lg p-[2px]">
+                        <!-- Comentário: (BUG 1) Dropzone 80x80px (w-20 h-20) -->
+                        <div id="inimigo-selecionado-dropzone" class="champion-dropzone relative">
+                            <span class="text-center text-xs p-1 absolute inset-0 flex items-center justify-center text-gray-500">Inimigo</span>
+                        </div>
+                    </div>
+                    <!-- Nível e Nome -->
+                    <div class="flex-grow">
+                        <!-- Comentário: (BUG 1) Nome do Campeão -->
+                        <h3 id="inimigo-champion-name" class="text-lg font-semibold text-white mb-1 h-6 truncate" title="Nome do Campeão"></h3>
+                        
+                        <label for="enemy-level" class="block text-sm font-medium text-neon-green">Nível (Inimigo)</label>
+                        <input type="number" id="enemy-level" name="enemy-level" value="1" min="1" max="18"
+                               class="mt-1 block w-full glass-input rounded-lg p-2">
+                    </div>
+                </div>
+
+                <!-- Comentário: (BUG 2) Bloco de Itens Estático (Inimigo) -->
+                <div class="glass-sub-card rounded-lg p-4 mt-4">
+                    <h3 class="text-lg font-semibold text-gray-300 mb-2">Itens (Inimigo)</h3>
+                    <!-- Comentário: (BUG 2) Grid ESTATICO com 6 slots de drop INDIVIDUAIS -->
+                    <div class="grid grid-cols-3 gap-2 justify-items-center">
+                        <div id="inimigo-item-slot-0" class="item-slot-placeholder"><span>Slot 1</span></div>
+                        <div id="inimigo-item-slot-1" class="item-slot-placeholder"><span>Slot 2</span></div>
+                        <div id="inimigo-item-slot-2" class="item-slot-placeholder"><span>Slot 3</span></div>
+                        <div id="inimigo-item-slot-3" class="item-slot-placeholder"><span>Slot 4</span></div>
+                        <div id="inimigo-item-slot-4" class="item-slot-placeholder"><span>Slot 5</span></div>
+                        <div id="inimigo-item-slot-5" class="item-slot-placeholder"><span>Slot 6</span></div>
+                    </div>
+                </div>
+
+                <!-- Comentário: (BUG 3) Tabela de Status (Inimigo) -->
+                <div id="card-rpg-inimigo" class.="mt-4">
+                    <h3 class="text-lg font-semibold text-gray-300 mb-2">Status Totais (Inimigo)</h3>
+                    <!-- Comentário: (BUG 3) Container populado pelo JS -->
+                    <div id="inimigo-stats-container" class="glass-sub-card rounded-lg p-4">
+                        <!-- A função renderRPGCard irá popular esta div -->
+                        <span class="text-gray-500 text-sm">Selecione um Inimigo</span>
+                    </div>
                 </div>
             </div>
+
         </div>
 
-    </div>
-
-    <!-- AD BANNER RODAPÉ (v4.0.0) -->
-    <footer id="adsense-bottom-banner" class="w-full h-24 glass-header flex items-center justify-center text-gray-500 z-10">
-        <!-- Comentário: Unidade de Anúncio Horizontal (ex: 728x90) deve ser inserida aqui -->
-        Espaço para Anúncio (Rodapé 728x90)
-    </footer>
+        <!-- AD BANNER RODAPÉ (v4.0.0) -->
+        <footer id="adsense-bottom-banner" class="w-full h-24 glass-header flex items-center justify-center text-gray-500 z-10">
+            <!-- Comentário: Unidade de Anúncio Horizontal (ex: 728x90) deve ser inserida aqui -->
+            Espaço para Anúncio (Rodapé 728x90)
+        </footer>
+    
+    </div> <!-- Fim do .app-wrapper -->
 
     <!-- Cérebro da Aplicação -->
     <script src="app.js"></script>
