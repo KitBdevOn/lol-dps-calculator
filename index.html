@@ -85,15 +85,17 @@
     </header>
 
     <!-- ÁREA PRINCIPAL DO APP (flex-1 para preencher o espaço) -->
-    <div class="flex-1 grid grid-cols-1 lg:grid-cols-5 gap-4 p-4 overflow-hidden">
+    <!-- Comentário: (Refatoração v2.1.0) Trocado para grid-cols-6 para melhor distribuição -->
+    <div class="flex-1 grid grid-cols-1 lg:grid-cols-6 gap-4 p-4 overflow-hidden">
 
         <!-- COLUNA 1: Biblioteca (Campeões e Itens) -->
-        <div class="lg:col-span-1 bg-gray-darkest p-4 rounded-lg shadow-lg flex flex-col h-full">
+        <!-- Comentário: (Refatoração v2.1.0) Expandido para col-span-2 (33%) para caber 4+ colunas de campeões -->
+        <div class="lg:col-span-2 bg-gray-darkest p-4 rounded-lg shadow-lg flex flex-col h-full">
             <h2 class="text-2xl font-bold text-neon-green mb-4">Biblioteca</h2>
             
             <!-- Abas (TAREFA 2) -->
             <div class="mb-4">
-                <!-- Comentário: Adicionados IDs para os listeners de clique -->
+                <!-- Comentário: IDs para os listeners de clique -->
                 <button id="tab-campeoes" class="bg-gray-light text-neon-green px-4 py-2 rounded-t-lg">Campeões</button>
                 <button id="tab-itens" class="bg-gray-dark text-gray-500 px-4 py-2 rounded-t-lg opacity-50">Itens</button>
             </div>
@@ -105,7 +107,7 @@
             </div>
             
             <!-- Área de Itens/Campeões (para popular com JS) -->
-            <!-- Comentário: A altura foi ajustada para compensar o filtro -->
+            <!-- Comentário: A largura extra (col-span-2) fará o 'flex-wrap' criar 4+ colunas automaticamente -->
             <div id="biblioteca-lista" class="flex flex-wrap gap-2 overflow-y-auto h-full p-2 bg-gray-dark rounded-b-lg rounded-tr-lg justify-start content-start">
                 <!-- Comentário: Placeholders são substituídos pelo app.js -->
                 <div class="w-16 h-16 bg-gray-light rounded-lg animate-pulse"></div>
@@ -113,7 +115,8 @@
         </div>
 
         <!-- COLUNA 2: Card Ativo (Cálculos) -->
-        <div class="lg:col-span-2 bg-gray-darkest p-4 rounded-lg shadow-lg flex flex-col h-full overflow-y-auto">
+        <!-- Comentário: (Refatoração v2.1.0) Expandido para col-span-3 (50%) para ser a área de trabalho principal -->
+        <div class="lg:col-span-3 bg-gray-darkest p-4 rounded-lg shadow-lg flex flex-col h-full overflow-y-auto">
             
             <!-- Comentário: Nova estrutura de layout (Tarefas 3, 5) -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -180,23 +183,25 @@
             </div>
         </div>
 
-        <!-- COLUNA 3: Resultado (DPS) -->
-        <div class="lg:col-span-1 bg-gray-darkest p-4 rounded-lg shadow-lg flex flex-col h-full items-center justify-center text-center">
-            <h2 class="text-2xl font-bold text-neon-green mb-4">DPS (Ataque Básico)</h2>
-            <div class="bg-gray-dark rounded-full w-48 h-48 flex items-center justify-center border-4 border-neon-green shadow-neon">
+        <!-- COLUNA 3: DPS e Anúncios (Conjunção) -->
+        <!-- Comentário: (Refatoração v2.1.0) Reduzido para col-span-1 (16.6%) e empilhado (DPS + Ad) -->
+        <div class="lg:col-span-1 bg-gray-darkest p-4 rounded-lg shadow-lg flex flex-col h-full items-center justify-start text-center overflow-y-auto">
+            <!-- DPS -->
+            <h2 class="text-2xl font-bold text-neon-green mb-4">DPS (AA)</h2>
+            <div class="bg-gray-dark rounded-full w-48 h-48 flex items-center justify-center border-4 border-neon-green shadow-neon flex-shrink-0">
                 <span id="resultado-dps" class="text-6xl font-bold text-white">0</span>
             </div>
-            <p class="mt-4 text-gray-400">vs. alvo com <span id="display-armor">100</span> Armadura</p>
+            <p class="mt-4 text-gray-400 flex-shrink-0">vs. alvo com <span id="display-armor">100</span> Armadura</p>
+            
+            <!-- Ad Lateral (TAREFA 4) - Movido para cá -->
+            <aside id="adsense-right-vertical" class="mt-6 w-full flex-grow flex flex-col items-center justify-start text-gray-500">
+                <h3 class="text-lg font-semibold text-gray-300 mb-2">Anúncio</h3>
+                <!-- Comentário: Unidade de Anúncio Vertical (ex: 300x600) deve ser inserida aqui -->
+                <div class="w-full max-w-[300px] h-96 bg-gray-dark border border-gray-light flex items-center justify-center rounded-lg mt-4">
+                    Espaço (Lateral 300x600)
+                </div>
+            </aside>
         </div>
-
-        <!-- COLUNA 4: Ad Lateral (TAREFA 4) -->
-        <aside id="adsense-right-vertical" class="lg:col-span-1 bg-gray-darkest p-4 rounded-lg shadow-lg flex flex-col h-full items-center justify-start text-gray-500 overflow-y-auto">
-            <h3 class="text-lg font-semibold text-gray-300 mb-2">Anúncio</h3>
-            <!-- Comentário: Unidade de Anúncio Vertical (ex: 300x600) deve ser inserida aqui -->
-            <div class="w-full h-96 bg-gray-dark border border-gray-light flex items-center justify-center rounded-lg mt-4">
-                Espaço para Anúncio (Lateral 300x600)
-            </div>
-        </aside>
 
     </div>
 
