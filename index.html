@@ -1,19 +1,20 @@
 <!DOCTYPE html>
 <!-- 
-  v6.1.0 (Refatoração de Layout e Preparação para Missão 6)
+  v6.2.0 (O Main Frame - UI de Habilidades e Simulador)
   
   PROTOCOLO DE PERFORMANCE (v5.0.4):
   1. Nossa Máxima: Desperdício de energia é fome e desespero.
   2. Tudo deve estar comentado: Para guia, debug e brainstorming.
   3. Repetir 1 e 2.
   
-  ATUALIZAÇÃO v6.1.0 (Sincronização):
-  - (FOME) Reaplicado o fix do "Footer Fixo" (v6.2.0 anterior)
+  ATUALIZAÇÃO v6.2.0 (O Main Frame):
+  - (FOME) Reaplicado o fix do "Footer Fixo" (v6.1.0)
     usando o .site-wrapper.
   - (FOME) Reaplicada a refatoração do DPS (1 Balão -> 3 Balões)
-    (v6.1.0 anterior) para preparar para a Missão 6.
-  - (DESESPERO) O app.js agora tem a função placeholder
-    calculateAbilityDPS() pronta para ser desenvolvida.
+    (v6.1.0) para preparar para a Missão 6.
+  - (DESESPERO) Adicionada a UI (HTML) para a MISSÃO 6:
+  - Card "Habilidades" (com 4 slots de ícone e 4 inputs de Rank).
+  - Card "Simulador de Rotação" (com inputs de Rotação e Duração).
 -->
 <html lang="pt-br">
 <head>
@@ -82,7 +83,7 @@
             background-image: radial-gradient(circle at top, rgba(26, 53, 110, 0.3), transparent 60%);
         }
 
-        /* (CORREÇÃO v6.1.0 - FOME 1) Wrapper do Site (Trazido do v6.2.0 anterior) */
+        /* (CORREÇÃO v6.1.0 - FOME 1) Wrapper do Site */
         .site-wrapper {
             display: flex;
             flex-direction: column;
@@ -113,6 +114,22 @@
         .dragging {
             opacity: 0.5;
         }
+
+        /* (v6.2.0) Inputs de Habilidade (Select) */
+        .ability-rank-select {
+            background-color: #0A1428; /* navy-darkest */
+            border: 1px solid #1A356E;
+            color: #D7B66D;
+            font-size: 12px;
+            padding: 2px;
+            border-radius: 4px;
+            width: 100%;
+        }
+        .ability-rank-select:focus {
+            outline: none;
+            border-color: #D7B66D;
+        }
+
     </style>
 
 </head>
@@ -170,6 +187,63 @@
                 </div>
             </div>
 
+            <!-- (NOVO v6.2.0 - MISSÃO 6) Bloco de Habilidades -->
+            <div class="sub-card-navy rounded-lg p-4 mt-4">
+                <h3 class="text-lg font-bold text-gold-metallic mb-4 text-center">Habilidades (Aliado)</h3>
+                <div class="grid grid-cols-4 gap-2 justify-items-center">
+                    <!-- Comentário: Q -->
+                    <div class="flex flex-col items-center gap-1 w-16">
+                        <div id="aliado-spell-q" class="w-12 h-12 rounded-lg item-slot flex items-center justify-center">
+                            <span class="text-gold-dark text-xs">Q</span>
+                        </div>
+                        <select id="aliado-rank-q" class="ability-rank-select">
+                            <option value="1">Rank 1</option>
+                            <option value="2">Rank 2</option>
+                            <option value="3">Rank 3</option>
+                            <option value="4">Rank 4</option>
+                            <option value="5">Rank 5</option>
+                        </select>
+                    </div>
+                    <!-- Comentário: W -->
+                    <div class="flex flex-col items-center gap-1 w-16">
+                        <div id="aliado-spell-w" class="w-12 h-12 rounded-lg item-slot flex items-center justify-center">
+                            <span class="text-gold-dark text-xs">W</span>
+                        </div>
+                        <select id="aliado-rank-w" class="ability-rank-select">
+                            <option value="1">Rank 1</option>
+                            <option value="2">Rank 2</option>
+                            <option value="3">Rank 3</option>
+                            <option value="4">Rank 4</option>
+                            <option value="5">Rank 5</option>
+                        </select>
+                    </div>
+                    <!-- Comentário: E -->
+                    <div class="flex flex-col items-center gap-1 w-16">
+                        <div id="aliado-spell-e" class="w-12 h-12 rounded-lg item-slot flex items-center justify-center">
+                            <span class="text-gold-dark text-xs">E</span>
+                        </div>
+                        <select id="aliado-rank-e" class="ability-rank-select">
+                            <option value="1">Rank 1</option>
+                            <option value="2">Rank 2</option>
+                            <option value="3">Rank 3</option>
+                            <option value="4">Rank 4</option>
+                            <option value="5">Rank 5</option>
+                        </select>
+                    </div>
+                    <!-- Comentário: R -->
+                    <div class="flex flex-col items-center gap-1 w-16">
+                        <div id="aliado-spell-r" class="w-12 h-12 rounded-lg item-slot flex items-center justify-center">
+                            <span class="text-gold-dark text-xs">R</span>
+                        </div>
+                        <select id="aliado-rank-r" class="ability-rank-select">
+                            <option value="1">Rank 1</option>
+                            <option value="2">Rank 2</option>
+                            <option value="3">Rank 3</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
             <!-- (Refatoração v4.1.0) Bloco de Itens Aliado -->
             <div class="sub-card-navy rounded-lg p-4 mt-4">
                 <h3 class="text-lg font-bold text-gold-metallic mb-4 text-center">Itens (Aliado)</h3>
@@ -197,7 +271,7 @@
             </div>
             
             <!-- (Refatoração v5.0.6) Tabela de Status Otimizada -->
-            <div class="sub-card-navy rounded-lg p-4 mt-4 flex-grow">
+            <div class="sub-card-navy rounded-lg p-4 mt-4">
                 <h3 class="text-lg font-bold text-gold-metallic mb-4 text-center">Status Totais (Aliado)</h3>
                 <!-- (CORREÇÃO v6.1.0) Adicionado max-w-xs mx-auto para "conectar" as colunas -->
                 <div id="aliado-stats-container" class="grid grid-cols-2 gap-x-4 gap-y-2 text-sm max-w-xs mx-auto">
@@ -216,8 +290,24 @@
                 </div>
             </div>
 
+            <!-- (NOVO v6.2.0 - MISSÃO 6) Simulador de Rotação -->
+            <div class="sub-card-navy rounded-lg p-4 mt-4">
+                <h3 class="text-lg font-bold text-gold-metallic mb-4 text-center">Simulador de Rotação</h3>
+                <div class="space-y-2">
+                    <div>
+                        <label for="rotation-string" class="text-sm text-gold-dark block">Rotação (Ex: Q,AA,W)</label>
+                        <input id="rotation-string" type="text" placeholder="Q,AA,W,AA,Q" class="w-full input-navy uppercase">
+                    </div>
+                    <div>
+                        <label for="rotation-duration" class="text-sm text-gold-dark block">Duração (Segundos)</label>
+                        <input id="rotation-duration" type="number" value="10" min="1" class="w-full input-navy">
+                    </div>
+                </div>
+            </div>
+            
             <!-- (Refatoração v6.1.0 - FOME) DPS (Triângulo) -->
-            <div class="flex flex-col items-center mt-4 space-y-2">
+            <!-- (v6.2.0) Adicionado 'flex-grow' para empurrar para o fundo -->
+            <div class="flex flex-col items-center mt-4 space-y-2 flex-grow justify-end">
                 <!-- Linha Superior (AD e AP) -->
                 <div class="flex justify-center gap-6 w-full">
                     <!-- DPS AD (Laranja) -->
