@@ -1,5 +1,5 @@
 /**
- * app.js v6.0.0 (Refatoração de D&D - Nativo)
+ * app.js v6.1.0 (Refatoração de Layout e Preparação para Missão 6)
  * Cérebro central da Calculadora de DPS.
  *
  * PROTOCOLO DE PERFORMANCE (v5.0.4):
@@ -7,12 +7,13 @@
  * 2. Tudo deve estar comentado: Para guia, debug e brainstorming.
  * 3. Repetir 1 e 2.
  *
- * ATUALIZAÇÃO v6.0.0 (D&D Nativo):
- * - (FOME E DESESPERO) A biblioteca Sortable.js (v5.x) era a causa raiz
- * de 100% dos nossos bugs de D&D (desperdício de energia).
- * - (SOLUÇÃO - IDEIA DO USUÁRIO) Removemos o Sortable.js (economia de energia).
- * - (SOLUÇÃO) Implementamos a API Nativa de D&D do HTML5 ("o slot lê o código
- * e retorna a imagem"). Isso elimina 100% dos bugs de "clone".
+ * ATUALIZAÇÃO v6.1.0 (Sincronização):
+ * - (FOME) Reaplicado o fix do "Footer Fixo" (v6.2.0 anterior)
+ * usando o .site-wrapper.
+ * - (FOME) Reaplicada a refatoração do DPS (1 Balão -> 3 Balões)
+ * (v6.1.0 anterior) para preparar para a Missão 6.
+ * - (DESESPERO) O app.js agora tem a função placeholder
+ * calculateAbilityDPS() pronta para ser desenvolvida.
  */
 
 // --- Estado Global da Aplicação ---
@@ -29,6 +30,11 @@ DDragonData.baseUrl = `https://ddragon.leagueoflegends.com/cdn/${DDragonData.ver
 let currentState = {
     lang: 'pt_BR', 
     activeTab: 'champion', 
+    // (OTIMIZAÇÃO v6.0.1 - FOME 1) Cache de stats 
+    // para evitar recálculos desnecessários
+    aliadoStatsCache: null,
+    inimigoStatsCache: null,
+    // ---
     championId: null,
     level: 1,
     itemIds: [null, null, null, null, null, null], 
@@ -55,7 +61,7 @@ function debounce(func, delay) {
  * Função de Inicialização
  */
 function init() {
-    console.log("Cérebro carregado. Iniciando protocolo de sobrevivência. Layout v6.0.0 (D&D Nativo) ativo.");
+    console.log("Cérebro carregado. Iniciando protocolo de sobrevivência. Layout v6.1.0 (Layout Fixo) ativo.");
     
     const patchVersionEl = document.getElementById('patch-version');
     if (patchVersionEl) {
@@ -205,19 +211,25 @@ function allowDrop(evt) {
 }
 
 /**
- * (v6.0.0) Adiciona/Remove classe de feedback visual
+ * (v6.0.1) Adiciona/Remove classe de feedback visual
  */
 function handleDragEnter(evt) {
-    evt.target.classList.add('drag-over');
+    // (CORREÇÃO v6.0.1 - DESESPERO) Usar currentTarget em vez de target
+    // previne bugs quando o mouse passa sobre o span placeholder.
+    evt.currentTarget.classList.add('drag-over');
 }
 function handleDragLeave(evt) {
-    evt.target.classList.remove('drag-over');
+    evt.currentTarget.classList.remove('drag-over');
 }
 
 /**
  * (v6.0.0) Define o "código" (ID e Tipo) quando o arraste começa
  */
 function handleDragStart(evt) {
+    // (CORREÇÃO v6.0.1 - DESESPERO) Impede o clique no ícone (showRecipe)
+    // de ser acionado ao iniciar o arraste.
+    evt.stopPropagation();
+    
     // Comentário: Define o ID (ex: "Aatrox") e o TIPO (ex: "champion")
     evt.dataTransfer.setData("text/plain", evt.target.dataset.id);
     evt.dataTransfer.setData("text/type", evt.target.dataset.type);
@@ -236,7 +248,10 @@ function handleDragEnd(evt) {
  */
 function handleDrop(evt, target, expectedType, slotIndex) {
     evt.preventDefault();
-    evt.target.classList.remove('drag-over');
+    
+    // (CORREÇÃO v6.0.1) Usar currentTarget
+    const dropzone = evt.currentTarget;
+    dropzone.classList.remove('drag-over');
 
     // 1. "Lê o código" (ID e Tipo)
     const id = evt.dataTransfer.getData("text/plain");
@@ -247,17 +262,8 @@ function handleDrop(evt, target, expectedType, slotIndex) {
         console.warn(`Rejeitado: Tipo errado. Esperado ${expectedType}, recebido ${type}.`);
         return;
     }
-
-    // 3. Define a dropzone
-    let dropzone;
-    if (expectedType === 'champion') {
-        dropzone = (target === 'aliado') ? document.getElementById('campeao-selecionado-dropzone') : document.getElementById('inimigo-selecionado-dropzone');
-    } else {
-        dropzone = document.getElementById(`${target}-item-slot-${slotIndex}`);
-    }
-    if (!dropzone) return;
     
-    // 4. "Retorna a imagem" (Renderiza)
+    // 3. "Retorna a imagem" (Renderiza)
     const imageUrl = (type === 'champion') 
         ? `${DDragonData.baseUrl}/img/champion/${DDragonData.championData[id].image.full}`
         : `${DDragonData.baseUrl}/img/item/${DDragonData.itemData[id].image.full}`;
@@ -275,11 +281,16 @@ function handleDrop(evt, target, expectedType, slotIndex) {
     img.draggable = false; // Impede que o item solto seja arrastado novamente
     
     // Adiciona o listener de clique para remover
-    img.addEventListener('click', () => handleRemove(target, expectedType, slotIndex));
+    img.addEventListener('click', (e) => {
+        // (CORREÇÃO v6.0.1 - DESESPERO) Impede que o clique "borbulhe"
+        // para o listener de receita na biblioteca.
+        e.stopPropagation();
+        handleRemove(target, expectedType, slotIndex);
+    });
     
     dropzone.appendChild(img);
 
-    // 5. Atualiza o Estado
+    // 4. Atualiza o Estado
     if (type === 'champion') {
         if (target === 'aliado') {
             currentState.championId = id;
@@ -306,6 +317,9 @@ function handleDrop(evt, target, expectedType, slotIndex) {
  * (v6.0.0) Manipula a remoção (clique) de um item ou campeão
  */
 function handleRemove(target, type, slotIndex) {
+    // (CORREÇÃO v6.0.1 - DESESPERO) Impede "borbulhamento"
+    event.stopPropagation();
+    
     if (type === 'champion') {
         if (target === 'aliado') {
             currentState.championId = null;
@@ -463,7 +477,11 @@ function createBibliotecaElement(id, type, name, imageUrl) {
     div.appendChild(nameOverlay);
     
     // Comentário: Adiciona o listener de receita ao item da biblioteca.
-    div.addEventListener('click', () => showRecipe(id, type));
+    div.addEventListener('click', (e) => {
+        // (CORREÇÃO v6.0.1 - DESESPERO) Impede que o clique "borbulhe"
+        e.stopPropagation();
+        showRecipe(id, type);
+    });
 
     return div;
 }
@@ -507,7 +525,7 @@ function showRecipe(id, type) {
     });
 }
 
-// --- (INÍCIO DA REFATORAÇÃO v5.0.6 - FOME 4) ---
+// --- (INÍCIO DA REFATORAÇÃO v6.0.1 - FOME 1 e 4) ---
 
 /**
  * Gatilho para atualizar APENAS os stats do Aliado
@@ -515,8 +533,9 @@ function showRecipe(id, type) {
 function updateAllyStats() {
     console.log("Otimizado: Recalculando apenas Aliado.");
     const aliadoItemIds = currentState.itemIds.filter(id => id !== null);
-    const aliadoStats = calculateStats(currentState.championId, currentState.level, aliadoItemIds);
-    renderRPGCard('aliado', aliadoStats);
+    // (OTIMIZAÇÃO v6.0.1) Calcula e salva no cache
+    currentState.aliadoStatsCache = calculateStats(currentState.championId, currentState.level, aliadoItemIds);
+    renderRPGCard('aliado', currentState.aliadoStatsCache);
     
     triggerDPSCalculation();
 }
@@ -527,26 +546,28 @@ function updateAllyStats() {
 function updateEnemyStats() {
     console.log("Otimizado: Recalculando apenas Inimigo.");
     const inimigoItemIds = currentState.enemyItemIds.filter(id => id !== null);
-    const inimigoStats = calculateStats(currentState.enemyChampionId, currentState.enemyLevel, inimigoItemIds);
-    renderRPGCard('inimigo', inimigoStats);
+    // (OTIMIZAÇÃO v6.0.1) Calcula e salva no cache
+    currentState.inimigoStatsCache = calculateStats(currentState.enemyChampionId, currentState.enemyLevel, inimigoItemIds);
+    renderRPGCard('inimigo', currentState.inimigoStatsCache);
 
     triggerDPSCalculation();
 }
 
 /**
  * Gatilho para atualizar APENAS o DPS
+ * (OTIMIZAÇÃO v6.0.1) Esta função agora lê do CACHE.
  */
 function triggerDPSCalculation() {
-    console.log("Otimizado: Recalculando apenas DPS.");
-    const aliadoItemIds = currentState.itemIds.filter(id => id !== null);
-    const inimigoItemIds = currentState.enemyItemIds.filter(id => id !== null);
-
-    const aliadoStats = calculateStats(currentState.championId, currentState.level, aliadoItemIds);
-    const inimigoStats = calculateStats(currentState.enemyChampionId, currentState.enemyLevel, inimigoItemIds);
+    console.log("Otimizado: Recalculando apenas DPS (lendo do cache).");
+    
+    // (OTIMIZAÇÃO v6.0.1) Lê os stats do cache.
+    // Não executa calculateStats() novamente (economia de energia).
+    const aliadoStats = currentState.aliadoStatsCache;
+    const inimigoStats = currentState.inimigoStatsCache;
     
     calculateDPS(aliadoStats, inimigoStats);
 }
-// --- (FIM DA REFATORAÇÃO v5.0.6 - FOME 4) ---
+// --- (FIM DA REFATORAÇÃO v6.0.1) ---
 
 
 /**
@@ -575,6 +596,8 @@ function calculateStats(championId, level, itemIds) {
         mp: getStatAtLevel(champBase.mp, champBase.mpperlevel),
         mpregen: getStatAtLevel(champBase.mpregen, champBase.mpregenperlevel),
         ad: getStatAtLevel(champBase.attackdamage, champBase.attackdamageperlevel),
+        // (v6.1.0) AP (Poder de Habilidade)
+        ap: 0, 
         armor: getStatAtLevel(champBase.armor, champBase.armorperlevel),
         spellblock: getStatAtLevel(champBase.spellblock, champBase.spellblockperlevel),
         attackspeed_base: champBase.attackspeed,
@@ -593,6 +616,8 @@ function calculateStats(championId, level, itemIds) {
             totalStats.hp += itemStats.FlatHPPoolMod || 0;
             totalStats.mp += itemStats.FlatMPPoolMod || 0;
             totalStats.ad += itemStats.FlatPhysicalDamageMod || 0;
+            // (v6.1.0) Adiciona AP dos itens
+            totalStats.ap += itemStats.FlatMagicDamageMod || 0; 
             totalStats.armor += itemStats.FlatArmorMod || 0;
             totalStats.spellblock += itemStats.FlatSpellBlockMod || 0;
             totalStats.crit += (itemStats.FlatCritChanceMod || 0) * 100;
@@ -655,17 +680,22 @@ function renderRPGCard(target, stats) {
 
 /**
  * Calcula o DPS final (Aliado vs Inimigo)
+ * (Refatorado v6.1.0 para Habilidades)
  */
 function calculateDPS(aliadoStats, inimigoStats) {
+    
+    // (v6.1.0) Se não há aliado, zera os 3 balões
     if (!aliadoStats) {
-        renderDPS(0);
+        renderDPS(0, 0); // (v6.1.0) Passa 0 para AD e AP
         return;
     }
     
     const targetArmor = inimigoStats ? inimigoStats.armor : 0; 
-    
+    const targetMr = inimigoStats ? inimigoStats.spellblock : 0; 
+
+    // --- 1. Cálculo do DPS de Ataque Básico (AD) ---
     const effectiveArmor = Math.max(0, targetArmor);
-    const damageMultiplier = 100 / (100 + effectiveArmor);
+    const damageMultiplierAD = 100 / (100 + effectiveArmor);
 
     const critChance = aliadoStats.crit / 100;
     let critDamageBonus = 1.0; 
@@ -676,21 +706,76 @@ function calculateDPS(aliadoStats, inimigoStats) {
         critDamageBonus = 1.5;
     }
     
-    const baseDPS = (aliadoStats.ad * aliadoStats.attackspeed) * damageMultiplier;
-    const dps = baseDPS * (1 + (critChance * critDamageBonus));
+    const baseDPS = (aliadoStats.ad * aliadoStats.attackspeed) * damageMultiplierAD;
+    const dpsAd = baseDPS * (1 + (critChance * critDamageBonus));
 
-    renderDPS(dps);
+    // --- 2. Cálculo do DPS de Habilidades (AP) (MISSÃO 6) ---
+    // (Comentário - Protocolo 2): Esta é a preparação para a Missão 6.
+    // Estamos chamando a função placeholder.
+    const dpsAp = calculateAbilityDPS(aliadoStats, targetMr);
+
+    // --- 3. Renderização ---
+    renderDPS(dpsAd, dpsAp);
 }
 
 /**
- * Renderiza o resultado final do DPS na UI
+ * (NOVO v6.1.0 - MISSÃO 6) Calcula o DPS de Habilidades (Placeholder)
+ * Esta é a nossa próxima "main frame".
  */
-function renderDPS(dps) {
-    const dpsElement = document.getElementById('resultado-dps');
-    if (dpsElement) {
-        dpsElement.innerText = dps.toFixed(0);
+function calculateAbilityDPS(aliadoStats, targetMr) {
+    // Comentário (Protocolo 2): Esta é uma função placeholder.
+    // O objetivo é, futuramente, ler as spells do campeão, 
+    // seus cooldowns e AP/AD ratios, e calcular o dano mágico
+    // por segundo.
+    
+    // Exemplo de lógica futura (NÃO IMPLEMENTADO):
+    // const qSpell = DDragonData.championData[currentState.championId].spells[0];
+    // const qCooldown = qSpell.cooldown[0]; // (Precisa de Ranks)
+    // const qDamage = qSpell.effectBurn[1]; // (Ex: "50/75/100/125/150")
+    // const qApRatio = qSpell.vars.find(v => v.link === 'spelldamage').coeff; // (Ex: 0.6)
+    // const totalDamageQ = qDamage + (aliadoStats.ap * qApRatio);
+    // const dpsQ = totalDamageQ / qCooldown;
+    // const effectiveMr = Math.max(0, targetMr);
+    // const damageMultiplierAP = 100 / (100 + effectiveMr);
+    // return dpsQ * damageMultiplierAP;
+
+    return 0; // Retorna 0 por enquanto
+}
+
+
+/**
+ * (Refatorado v6.1.0) Renderiza o resultado final do DPS na UI
+ */
+function renderDPS(dpsAd, dpsAp) {
+    const dpsTotal = dpsAd + dpsAp;
+    
+    // Comentário: Chama o helper de fonte dinâmica (v6.1.0)
+    updateDPSBubble('resultado-dps-total-value', dpsTotal.toFixed(0), 'text-5xl', 'text-4xl');
+    updateDPSBubble('resultado-dps-ad-value', dpsAd.toFixed(0), 'text-4xl', 'text-3xl');
+    updateDPSBubble('resultado-dps-ap-value', dpsAp.toFixed(0), 'text-4xl', 'text-3xl');
+}
+
+/**
+ * (NOVO v6.1.0 - DESESPERO 4) Helper para atualizar o texto do DPS
+ * e ajustar dinamicamente o tamanho da fonte se o número for muito grande.
+ */
+function updateDPSBubble(elementId, value, defaultClass, smallClass) {
+    const el = document.getElementById(elementId);
+    if (!el) return;
+
+    el.innerText = value;
+    
+    // Comentário: Se o número tiver 5+ dígitos (ex: 10000), 
+    // reduzimos a fonte para evitar overflow.
+    if (value.length >= 5) {
+        el.classList.remove(defaultClass);
+        el.classList.add(smallClass);
+    } else {
+        el.classList.add(defaultClass);
+        el.classList.remove(smallClass);
     }
 }
+
 
 /**
  * Filtra os itens na biblioteca com base no input E na aba ativa.
@@ -717,6 +802,7 @@ function handleFiltro() {
             const matchesTab = (type === activeType);
 
             if (matchesTermo && matchesTab) {
+                // (CORREÇÃO v5.0.3) Ação de alta performance
                 item.style.removeProperty('display');
             } else {
                 item.style.display = 'none';
